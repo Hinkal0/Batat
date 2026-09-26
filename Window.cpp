@@ -3,6 +3,9 @@
 static float SCALE = 4.0f;
 static uint32_t RESX = 480, RESY = 270;
 
+static uint32_t cursorTex[20*20];
+static std::optional<sf::Cursor> cursor;
+
 static void updateView(sf::RenderWindow& handle, sf::View& view, sf::Vector2u size) {
   uint32_t scale = std::min(size.x/RESX, size.y/RESY);
   sf::Vector2f vSize = {scale*RESX/(float)size.x, scale*RESY/(float)size.y};
@@ -27,6 +30,17 @@ Window::Window(const WinConfig& config)
     sf::View view({0.0f, 0.0f}, {SCALE*RESX, SCALE*RESY});
     updateView(handle, view, handle.getSize());
     size = handle.getSize();
+
+    for (int i = 0; i < 20; i++) {
+      for (int j = 0; j < 20; j++) {
+        if ((i >= 8 && i <= 11) || (j >= 8 && j <= 11)) cursorTex[i*20+j] = 0xffffffff;
+        else cursorTex[i*20+j] = 0;
+      }
+    }
+
+    cursor = sf::Cursor::createFromPixels((uint8_t*)cursorTex, {20, 20}, {10, 10});
+    if (cursor.has_value()) handle.setMouseCursor(cursor.value());
+    
 }
 
 bool Window::isOpen() const {
@@ -39,6 +53,9 @@ void Window::pollEvents() {
     if (event->is<sf::Event::Closed>()) {
       handle.close();
       return;
+    }
+    if (event->is<sf::Event::MouseEntered>()) {
+      if (cursor.has_value()) handle.setMouseCursor(cursor.value());
     }
     if (const auto* resized = event->getIf<sf::Event::Resized>()) {
       sf::View view = handle.getView();
