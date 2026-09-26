@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(Batat)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(RUNTIME_DIR "${CMAKE_BINARY_DIR}/bin")
@@ -16,6 +16,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(SFML)
+
+add_custom_target(config
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_SOURCE_DIR}/config.ini
+    ${RUNTIME_DIR}/config.ini
+)
 
 # add_custom_target(textures
 #   COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -33,6 +39,7 @@ add_executable(batat
   entry.cpp
   GameManager.cpp
   Window.cpp
+  Parser.cpp
 )
 
 set_target_properties(batat 
@@ -51,4 +58,4 @@ target_link_libraries(batat
     SFML::System
 )
 
-#add_dependencies(batat textures fonts)
+add_dependencies(batat config)

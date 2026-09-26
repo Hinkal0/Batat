@@ -1,7 +1,13 @@
 #include "GameManager.h"
+#include "Parser.h"
 
 GameManager::GameManager() {
-  WinConfig wconf = {"Batat", 800, 600, 600, 600, 0};
+  WinConfig wconf = {};
+  try {
+    Parser parser("config.ini");
+    if (!parser.extractConfig(wconf)) wconf = {};
+  } catch(std::runtime_error& e) {}
+
   window = Window(wconf);
 }
 
