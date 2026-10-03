@@ -16,11 +16,13 @@ class Window {
   sf::Vector2u size;
   sf::Vector2u minSize;
   bool fullscreen;
+  bool paused = false;
 public:
   Window() = default;
   Window(const WinConfig& config);
 
   bool isOpen() const;
+  bool isPaused() const;
 
   void pollEvents();
 

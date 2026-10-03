@@ -49,6 +49,10 @@ bool Window::isOpen() const {
   return handle.isOpen();
 }
 
+bool Window::isPaused() const {
+  return paused;
+}
+
 void Window::pollEvents() {
   static sf::Vector2f pos = {0.0f, 0.0f};
   while (const auto& event = handle.pollEvent()) {
@@ -66,9 +70,10 @@ void Window::pollEvents() {
       size = handle.getSize();
     }
     if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+      sf::View view;
       switch (key->code) {
       case sf::Keyboard::Key::F11:
-        sf::View view = handle.getView();
+        view = handle.getView();
         if (!fullscreen) {
           handle.create(sf::VideoMode::getDesktopMode(), title, sf::State::Fullscreen);
         } else {
@@ -80,6 +85,10 @@ void Window::pollEvents() {
         handle.setVerticalSyncEnabled(true);
         handle.setMouseCursorGrabbed(true);
         fullscreen ^= 1;
+        break;
+      case sf::Keyboard::Key::Escape:
+        handle.setMouseCursorGrabbed(paused);
+        paused ^= 1;
         break;
       }
     }

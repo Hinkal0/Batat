@@ -35,11 +35,13 @@ void GameManager::run() {
     renderDelta += deltaTime;
     start = std::chrono::high_resolution_clock::now();
     
-    gameScene.update(deltaTime);
-    
-    gameScene.cameraPos = (
-      window.getMousePos()+player->getPosition().componentWiseMul({2,2}))
-      .componentWiseDiv({3,3});
+    if (!window.isPaused()) {
+      gameScene.update(deltaTime);
+      
+      gameScene.cameraPos = (
+        window.getMousePos()+player->getPosition().componentWiseMul({2,2}))
+        .componentWiseDiv({3,3});
+    }
 
     if (1000.0f/renderDelta <= FRAMERATE) {
       window.draw(gameScene);
