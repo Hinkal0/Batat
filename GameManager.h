@@ -1,8 +1,13 @@
 #pragma once
 #include "Window.h"
+#include "Player.h"
 
 class GameManager {
   Window window;
+
+  Scene gameScene;
+
+  std::shared_ptr<Player> player;
 
 public:
   GameManager();

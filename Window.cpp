@@ -1,4 +1,5 @@
 #include "Window.h"
+#include <algorithm>
 
 static float SCALE = 4.0f;
 static uint32_t RESX = 480, RESY = 270;
@@ -23,11 +24,12 @@ Window::Window(const WinConfig& config)
       handle = sf::RenderWindow(sf::VideoMode({config.w, config.h}), config.title);
     }
 
-    handle.setFramerateLimit(120);
     handle.setKeyRepeatEnabled(false);
     handle.setMinimumSize(minSize);
+    handle.setVerticalSyncEnabled(true);
+    handle.setMouseCursorGrabbed(true);
 
-    sf::View view({0.0f, 0.0f}, {SCALE*RESX, SCALE*RESY});
+    sf::View view({0.0f, 0.0f}, {SCALE*RESX, -SCALE*RESY});
     updateView(handle, view, handle.getSize());
     size = handle.getSize();
 
@@ -73,9 +75,10 @@ void Window::pollEvents() {
           handle.create(sf::VideoMode(size), title);
         }
         updateView(handle, view, handle.getSize());
-        handle.setFramerateLimit(120);
         handle.setKeyRepeatEnabled(false);
         handle.setMinimumSize(minSize);
+        handle.setVerticalSyncEnabled(true);
+        handle.setMouseCursorGrabbed(true);
         fullscreen ^= 1;
         break;
       }
@@ -83,20 +86,37 @@ void Window::pollEvents() {
   }
 }
 
-void Window::beginDraw() {
+void Window::draw(const Scene& scene) {
+  sf::View view = handle.getView();
+  view.setCenter(scene.cameraPos);
+  handle.setView(view);
+
   handle.clear();
-  sf::RectangleShape rect({100, 100});
   sf::RectangleShape rect2({10000,10000});
-  rect2.setFillColor(sf::Color::Blue);
+  rect2.setFillColor(sf::Color(100, 100, 100));
   rect2.setPosition({-1000, -1000});
-  rect.setOrigin({50, 50});
-  rect.setPosition({0, 0});
-  rect.setFillColor(sf::Color::White);
   
   handle.draw(rect2);
-  handle.draw(rect);
+
+  scene.draw(handle);
+
+  handle.display();
 }
 
-void Window::endDraw() {
-  handle.display();
+sf::Vector2f Window::getMousePos(void) const {
+  sf::Vector2i pos = sf::Mouse::getPosition(handle);
+  sf::Vector2f viewport = handle.getView().getViewport().size;
+  sf::Vector2f fsize = {(float)size.x, (float)size.y};
+  sf::FloatRect clampArea (
+    (sf::Vector2f{0.5f,0.5f}-viewport.componentWiseDiv({2,2})).componentWiseMul(fsize),
+    viewport.componentWiseMul(fsize)
+  );
+  
+  pos.x = std::clamp<float>(pos.x, 
+    clampArea.position.x, (clampArea.position+clampArea.size).x);
+  pos.y = std::clamp<float>(pos.y, 
+    clampArea.position.y, (clampArea.position+clampArea.size).y);
+
+  
+  return handle.mapPixelToCoords(pos);
 }

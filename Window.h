@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
+#include "Scene.h"
 
 struct WinConfig {
   std::string title = "Title";
@@ -23,6 +24,7 @@ public:
 
   void pollEvents();
 
-  void beginDraw();
-  void endDraw();
+  void draw(const Scene& scene);
+
+  sf::Vector2f getMousePos(void) const;
 };

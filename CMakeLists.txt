@@ -40,6 +40,9 @@ add_executable(batat
   GameManager.cpp
   Window.cpp
   Parser.cpp
+  Scene.cpp
+  Object.h
+  Player.cpp
 )
 
 set_target_properties(batat 
