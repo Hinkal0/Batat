@@ -101,12 +101,6 @@ void Window::draw(const Scene& scene) {
   handle.setView(view);
 
   handle.clear();
-  sf::RectangleShape rect2({10000,10000});
-  rect2.setFillColor(sf::Color(100, 100, 100));
-  rect2.setPosition({-1000, -1000});
-  
-  handle.draw(rect2);
-
   scene.draw(handle);
 
   handle.display();
