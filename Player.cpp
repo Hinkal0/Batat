@@ -1,6 +1,6 @@
 #include "Player.h"
 
-Player::Player(const sf::Texture& texture) : Object(texture) {
+Player::Player(const sf::Texture& texture, std::shared_ptr<const Map> map) : Object(texture), map(map) {
   this->setOrigin(this->getLocalBounds().size.componentWiseDiv({2,2}));
 } 
 
@@ -19,5 +19,7 @@ void Player::update(float deltaTime) {
     direction.y += 1.0f;
   }
 
-  this->move(direction.componentWiseMul({deltaTime, deltaTime}));
+  sf::Vector2f movement = direction.componentWiseMul({deltaTime, deltaTime});
+
+  this->move(map->resolveMovement(this->getGlobalBounds(), movement));
 }

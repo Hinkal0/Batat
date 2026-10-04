@@ -23,11 +23,11 @@ add_custom_target(config
     ${RUNTIME_DIR}/config.ini
 )
 
-# add_custom_target(textures
-#   COMMAND ${CMAKE_COMMAND} -E copy_directory
-#     ${CMAKE_SOURCE_DIR}/textures
-#     ${RUNTIME_DIR}/textures
-# )
+add_custom_target(textures
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/textures
+    ${RUNTIME_DIR}/textures
+)
 
 # add_custom_target(fonts
 #   COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -43,6 +43,7 @@ add_executable(batat
   Scene.cpp
   Object.h
   Player.cpp
+  Map.cpp
 )
 
 set_target_properties(batat 
@@ -61,4 +62,4 @@ target_link_libraries(batat
     SFML::System
 )
 
-add_dependencies(batat config)
+add_dependencies(batat config textures)

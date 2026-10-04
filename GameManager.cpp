@@ -1,6 +1,7 @@
 #include "GameManager.h"
 #include "Parser.h"
 #include <chrono>
+#include <random>
 
 static float deltaTime = 0.0f;
 static float renderDelta = 0.0f;
@@ -16,12 +17,19 @@ GameManager::GameManager() {
   } catch(std::runtime_error& e) {}
 
   window = Window(wconf);
+  
+  uint32_t seed = time(nullptr);
+  srand(seed);
+
+  gameScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
+  gameScene.map->generate();
 
   gameScene.layers.push_back({});
 
   sf::Image image({100, 100}, sf::Color::White);
   texture = sf::Texture(image);
-  player = std::make_shared<Player>(texture);
+  player = std::make_shared<Player>(texture, gameScene.map);
+  player->setPosition(gameScene.map->getSpawnPoint());
   gameScene.layers[0].insert(player);
 }
 
