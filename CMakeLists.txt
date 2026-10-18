@@ -44,6 +44,9 @@ add_executable(batat
   Object.h
   Player.cpp
   Map.cpp
+  Character.h
+  Projectile.cpp
+  Slash.cpp
 )
 
 set_target_properties(batat 

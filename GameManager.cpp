@@ -24,13 +24,11 @@ GameManager::GameManager() {
   gameScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
   gameScene.map->generate();
 
-  gameScene.layers.push_back({});
-
   sf::Image image({100, 100}, sf::Color::White);
   texture = sf::Texture(image);
-  player = std::make_shared<Player>(texture, gameScene.map);
+  player = std::make_shared<Player>(texture, gameScene);
   player->setPosition(gameScene.map->getSpawnPoint());
-  gameScene.layers[0].insert(player);
+  gameScene.spawn(LAYER_CHARACTERS, player);
 }
 
 void GameManager::run() {
@@ -44,10 +42,12 @@ void GameManager::run() {
     start = std::chrono::high_resolution_clock::now();
     
     if (!window.isPaused()) {
+      sf::Vector2f mouse = window.getMousePos();
+      player->aimAt(mouse);
       gameScene.update(deltaTime);
       
       gameScene.cameraPos = (
-        window.getMousePos()+player->getPosition().componentWiseMul({2,2}))
+        mouse+player->getPosition().componentWiseMul({2,2}))
         .componentWiseDiv({3,3});
     }
 
