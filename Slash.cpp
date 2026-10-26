@@ -4,8 +4,8 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-static const float SLASH_RADIUS = 170.0f;
-static const float SLASH_HALF_ANGLE = M_PI * 0.4f;
+static const float SLASH_RADIUS = 140.0f;
+static const float SLASH_HALF_ANGLE = M_PI / 3.0f;
 static const float SLASH_DURATION = 150.0f;
 
 static sf::Texture slashTexture("textures/slash.png");
