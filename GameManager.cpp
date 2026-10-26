@@ -1,5 +1,6 @@
 #include "GameManager.h"
 #include "Parser.h"
+#include "Textures.h"
 #include <chrono>
 #include <random>
 
@@ -18,6 +19,8 @@ GameManager::GameManager() {
   
   uint32_t seed = time(nullptr);
   srand(seed);
+
+  Textures::load();
 
   gameScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
   gameScene.map->generate();
@@ -52,4 +55,6 @@ void GameManager::run() {
       renderDelta = 0.0f;
     }
   }
+  
+  Textures::unload();
 }

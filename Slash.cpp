@@ -1,6 +1,7 @@
 #include "Slash.h"
 #include "Projectile.h"
 #include "Scene.h"
+#include "Textures.h"
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -8,10 +9,8 @@ static const float SLASH_RADIUS = 140.0f;
 static const float SLASH_HALF_ANGLE = M_PI / 3.0f;
 static const float SLASH_DURATION = 150.0f;
 
-static sf::Texture slashTexture("textures/slash.png");
-
 Slash::Slash(Scene& scene, sf::Vector2f position, sf::Vector2f direction)
-: Object(slashTexture), scene(scene), direction(direction.normalized()),
+: Object(*Textures::slash), scene(scene), direction(direction.normalized()),
  timeLeft(SLASH_DURATION) {
   sf::Vector2f textureSize(getTexture().getSize());
   setOrigin({0.0f, textureSize.y / 2.0f});

@@ -1,4 +1,5 @@
 #include "Map.h"
+#include "Textures.h"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -7,8 +8,6 @@ static const int MIN_LEAF = 12;
 static const int MAX_LEAF = 26;
 static const int MIN_ROOM = 6;
 static const int CORRIDOR_WIDTH = 3;
-
-static const char* TILEMAP = "textures/tilemap.png";
 
 enum WallShapeBits : uint8_t {
   FLOOR_BELOW       = 1 << 0,
@@ -68,10 +67,10 @@ static int randInt(int lo, int hi) {
 }
 
 Map::Map(sf::Vector2u size, float tileSize) 
-: size(size), tileSize(tileSize), tilemap(TILEMAP) {}
+: size(size), tileSize(tileSize) {}
 
 sf::IntRect Map::tileRect(uint8_t tile) const {
-  int tileW = (int)tilemap.getSize().x / TILEMAP_WIDTH;
+  int tileW = (int)Textures::tilemap->getSize().x / TILEMAP_WIDTH;
   return sf::IntRect({tile % TILEMAP_WIDTH * tileW, tile / TILEMAP_WIDTH * tileW}, {tileW, tileW});
 }
 
@@ -242,7 +241,7 @@ void Map::buildVisuals() {
 void Map::draw(sf::RenderTarget& target, sf::RenderStates states) const {
   if (visuals.empty()) return;
 
-  sf::Sprite sprite(tilemap);
+  sf::Sprite sprite(*Textures::tilemap);
   sf::Vector2i rectSize = tileRect(0).size;
   if (rectSize.x == 0 || rectSize.y == 0) return;
 

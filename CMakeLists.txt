@@ -47,6 +47,7 @@ add_executable(batat
   Character.h
   Projectile.cpp
   Slash.cpp
+  Textures.cpp
 )
 
 set_target_properties(batat 

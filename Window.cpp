@@ -90,6 +90,8 @@ void Window::pollEvents() {
         handle.setMouseCursorGrabbed(paused);
         paused ^= 1;
         break;
+      default:
+        break;
       }
     }
   }

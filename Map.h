@@ -18,8 +18,6 @@ private:
   std::vector<uint8_t> visuals;
   std::vector<sf::IntRect> rooms;
 
-  sf::Texture tilemap;
-
   sf::Vector2i splitAndCarve(sf::IntRect area);
   void carveRect(sf::IntRect rect);
   void carveCorridor(sf::Vector2i from, sf::Vector2i to);

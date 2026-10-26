@@ -1,9 +1,8 @@
 #define _USE_MATH_DEFINES
 #include "Player.h"
 #include "Projectile.h"
+#include "Textures.h"
 #include <cmath>
-
-static sf::Texture playerTexture("textures/player.png");
 
 static const sf::Vector2f HITBOX_SIZE = {64.0f, 68.0f};
 
@@ -21,7 +20,7 @@ static const float WALK_TILT = 7.0f;
 static const float WALK_BLEND_TIME = 120.0f;
 
 Player::Player(Scene& scene)
-: Character(playerTexture, Team::Player, PlayerStats{}.maxHealth), scene(scene) {
+: Character(*Textures::player, Team::Player, PlayerStats{}.maxHealth), scene(scene) {
   this->setOrigin(this->getLocalBounds().size / 2.0f);
   this->setScale({4, 4});
 }
