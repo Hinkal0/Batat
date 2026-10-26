@@ -37,7 +37,7 @@ void Scene::resolveHits() {
     for (auto& other : layers[LAYER_CHARACTERS]) {
       auto* character = dynamic_cast<Character*>(other.get());
       if (!character || character->destroyed || character->getTeam() == projectile->getTeam()) continue;
-      if (!bounds.findIntersection(character->getGlobalBounds())) continue;
+      if (!bounds.findIntersection(character->getHitbox())) continue;
 
       character->takeDamage(projectile->getDamage());
       projectile->destroyed = true;

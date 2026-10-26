@@ -16,5 +16,7 @@ public:
   int getHealth() const { return health; }
   int getMaxHealth() const { return maxHealth; }
 
+  virtual sf::FloatRect getHitbox() const { return getGlobalBounds(); }
+
   virtual void takeDamage(int amount) { health = std::max(0, health - amount); }
 };

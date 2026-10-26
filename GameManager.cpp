@@ -7,8 +7,6 @@ static float deltaTime = 0.0f;
 static float renderDelta = 0.0f;
 const static float FRAMERATE = 120.0f;
 
-static sf::Texture texture;
-
 GameManager::GameManager() {
   WinConfig wconf = {};
   try {
@@ -24,9 +22,7 @@ GameManager::GameManager() {
   gameScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
   gameScene.map->generate();
 
-  sf::Image image({100, 100}, sf::Color::White);
-  texture = sf::Texture(image);
-  player = std::make_shared<Player>(texture, gameScene);
+  player = std::make_shared<Player>(gameScene);
   player->setPosition(gameScene.map->getSpawnPoint());
   gameScene.spawn(LAYER_CHARACTERS, player);
 }

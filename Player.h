@@ -23,11 +23,21 @@ class Player : public Character {
   bool slashHeld = false;
   std::shared_ptr<Slash> activeSlash;
 
+  float idleTime = 0.0f; 
+  float walkPhase = 0.0f;
+  float walkBlend = 0.0f;
+
   void shoot();
   void slash();
 
+  void animate(float deltaTime, bool moving);
+  sf::Transform animationTransform() const;
+  void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+
 public:
-  Player(const sf::Texture& texture, Scene& scene);
+  Player(Scene& scene);
+
+  sf::FloatRect getHitbox() const override;
 
   void aimAt(sf::Vector2f target);
 
