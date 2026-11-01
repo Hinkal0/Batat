@@ -21,6 +21,7 @@ class Player : public Character {
   float fireCooldown = 0.0f; 
   float slashCooldown = 0.0f;
   bool slashHeld = false;
+  bool fireLocked = false;
   std::shared_ptr<Slash> activeSlash;
 
   float idleTime = 0.0f; 
@@ -40,6 +41,12 @@ public:
   sf::FloatRect getHitbox() const override;
 
   void aimAt(sf::Vector2f target);
+
+  void lockInputUntilRelease();
+
+  const PlayerStats& getStats() const { return stats; }
+
+  float getSlashReadiness() const;
 
   void update(float deltaTime) override;
 };

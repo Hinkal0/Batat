@@ -1,7 +1,7 @@
 #define _USE_MATH_DEFINES
 #include "Player.h"
 #include "Projectile.h"
-#include "Textures.h"
+#include "Resources.h"
 #include <cmath>
 
 static const sf::Vector2f HITBOX_SIZE = {64.0f, 68.0f};
@@ -32,6 +32,15 @@ sf::FloatRect Player::getHitbox() const {
 void Player::aimAt(sf::Vector2f target) {
   sf::Vector2f offset = target - getPosition();
   if (offset.length() != 0.0f) aimDirection = offset.normalized();
+}
+
+void Player::lockInputUntilRelease() {
+  fireLocked = true;
+  slashHeld = true;
+}
+
+float Player::getSlashReadiness() const {
+  return 1.0f - slashCooldown / stats.slashInterval;
 }
 
 void Player::shoot() {
@@ -69,7 +78,8 @@ void Player::update(float deltaTime) {
 
   fireCooldown = std::max(0.0f, fireCooldown - deltaTime);
   bool firePressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-  if (firePressed && fireCooldown == 0.0f) {
+  if (!firePressed) fireLocked = false;
+  if (firePressed && !fireLocked && fireCooldown == 0.0f) {
     shoot();
     fireCooldown += stats.fireInterval;
   }
