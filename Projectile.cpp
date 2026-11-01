@@ -1,5 +1,5 @@
 #include "Projectile.h"
-#include "Textures.h"
+#include "Resources.h"
 #include <cmath>
 
 static const float PROJECTILE_RADIUS = 12.0f;

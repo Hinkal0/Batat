@@ -1,7 +1,7 @@
 #include "Slash.h"
 #include "Projectile.h"
 #include "Scene.h"
-#include "Textures.h"
+#include "Resources.h"
 #define _USE_MATH_DEFINES
 #include <cmath>
 
