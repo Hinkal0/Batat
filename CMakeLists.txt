@@ -29,11 +29,11 @@ add_custom_target(textures
     ${RUNTIME_DIR}/textures
 )
 
-# add_custom_target(fonts
-#   COMMAND ${CMAKE_COMMAND} -E copy_directory
-#     ${CMAKE_SOURCE_DIR}/fonts
-#     ${RUNTIME_DIR}/fonts
-# )
+add_custom_target(fonts
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/fonts
+    ${RUNTIME_DIR}/fonts
+)
 
 add_executable(batat
   entry.cpp
@@ -47,7 +47,11 @@ add_executable(batat
   Character.h
   Projectile.cpp
   Slash.cpp
-  Textures.cpp
+  Resources.cpp
+  Text.cpp
+  Menu.cpp
+  Hud.cpp
+  Interface.cpp
 )
 
 set_target_properties(batat 
@@ -64,6 +68,7 @@ target_link_libraries(batat
     SFML::Graphics
     SFML::Window
     SFML::System
+    SFML::Audio
 )
 
-add_dependencies(batat config textures)
+add_dependencies(batat config textures fonts)
