@@ -4,6 +4,7 @@
 #include <memory>
 #include <SFML/Graphics.hpp>
 #include "Object.h"
+#include "UIElement.h"
 #include "Map.h"
 
 enum Layer {
@@ -13,8 +14,15 @@ enum Layer {
   LAYER_COUNT
 };
 
+enum UILayer {
+  UI_LAYER_HUD,
+  UI_LAYER_MENU,
+  UI_LAYER_COUNT
+};
+
 class Scene {
   std::array<std::unordered_set<std::shared_ptr<Object>>, LAYER_COUNT> layers;
+  std::array<std::unordered_set<std::shared_ptr<UIElement>>, UI_LAYER_COUNT> uiLayers;
 
   void resolveHits();
 
@@ -26,8 +34,14 @@ public:
   Scene();
 
   void spawn(Layer layer, std::shared_ptr<Object> object);
+  void spawn(UILayer layer, std::shared_ptr<UIElement> element);
+  void clearObjects();
+
   const std::unordered_set<std::shared_ptr<Object>>& getLayer(Layer layer) const;
+  const std::unordered_set<std::shared_ptr<UIElement>>& getLayer(UILayer layer) const;
   
   void update(float deltaTime);
-  void draw(sf::RenderWindow& window) const;
+
+  void draw(sf::RenderTarget& target) const;
+  void drawUI(sf::RenderTarget& target) const;
 };
