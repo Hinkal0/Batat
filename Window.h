@@ -5,6 +5,7 @@
 #include <vector>
 #include "Config.h"
 #include "Scene.h"
+#include "Event.h"
 
 class Window {
   sf::RenderWindow handle;
@@ -26,13 +27,20 @@ class Window {
 public:
   static constexpr sf::Vector2f UI_SIZE = {480.0f, 270.0f};
 
+  Event<sf::Keyboard::Key> onKeyPressed;
+  Event<sf::Keyboard::Key> onKeyReleased;
+  Event<sf::Vector2f> onMouseMoved;
+  Event<sf::Mouse::Button> onMousePressed;
+  Event<sf::Mouse::Button> onMouseReleased;
+  Event<> onFocusLost;
+
   Window() = default;
   Window(const WinConfig& config);
 
   bool isOpen() const;
   void close();
 
-  std::optional<sf::Event> pollEvent();
+  void pollEvents();
 
   bool isFullscreen() const { return fullscreen; }
   void setFullscreen(bool value);
@@ -48,5 +56,4 @@ public:
 
   sf::Vector2f getMousePos(const Scene& scene) const;
   sf::Vector2f getUIMousePos(void) const;
-  sf::Vector2f mapPixelToUI(sf::Vector2i pixel) const;
 };

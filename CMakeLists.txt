@@ -37,21 +37,33 @@ add_custom_target(fonts
 
 add_executable(batat
   entry.cpp
+  Event.h
   GameManager.cpp
-  Window.cpp
-  Parser.cpp
-  Scene.cpp
-  Object.h
-  Player.cpp
-  Map.cpp
-  Character.h
-  Projectile.cpp
-  Slash.cpp
-  Resources.cpp
-  Text.cpp
-  Menu.cpp
+  GameManager.h
   Hud.cpp
+  Hud.h
   Interface.cpp
+  Interface.h
+  Map.cpp
+  Map.h
+  Menu.cpp
+  Menu.h
+  Parser.cpp
+  Parser.h
+  Player.cpp
+  Player.h
+  Projectile.cpp
+  Projectile.h
+  Resources.cpp
+  Resources.h
+  Scene.cpp
+  Scene.h
+  Slash.cpp
+  Slash.h
+  Text.cpp
+  Text.h
+  Window.cpp
+  Window.h
 )
 
 set_target_properties(batat 

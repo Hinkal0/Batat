@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include "Window.h"
 
 class Menu : public sf::Drawable {
   struct Item {
@@ -17,6 +18,8 @@ class Menu : public sf::Drawable {
     bool canStep(int direction) const { return !canChange || canChange(direction); }
     void step(int direction) const { if (change && canStep(direction)) change(direction); }
   };
+
+  const Window& window;
 
   std::vector<Item> items;
   int selected = 0;
@@ -33,7 +36,7 @@ public:
   std::string title;
   float top = 110.0f;
 
-  Menu(std::string title = "");
+  Menu(const Window& window, std::string title = "");
 
   void addButton(std::string label, std::function<void()> press);
   void addOption(std::string label, std::function<std::string()> value,
@@ -43,5 +46,7 @@ public:
 
   void reset();
 
-  void handleEvent(const sf::Event& event, sf::Vector2f uiMouse);
+  void onKeyPressed(sf::Keyboard::Key key);
+  void onMouseMoved(sf::Vector2f uiMouse);
+  void onMousePressed(sf::Mouse::Button button);
 };

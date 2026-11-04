@@ -1,6 +1,5 @@
 #include "Menu.h"
 #include "Text.h"
-#include "Window.h"
 #include <cmath>
 
 static const float BUTTON_WIDTH = 120.0f;
@@ -18,7 +17,7 @@ static const sf::Color TEXT_COLOR(200, 200, 212);
 static const sf::Color TEXT_SELECTED_COLOR(255, 222, 120);
 static const sf::Color TEXT_DISABLED_COLOR(96, 94, 110);
 
-Menu::Menu(std::string title) : title(std::move(title)) {}
+Menu::Menu(const Window& window, std::string title) : window(window), title(std::move(title)) {}
 
 void Menu::addButton(std::string label, std::function<void()> press) {
   items.push_back({std::move(label), std::move(press), nullptr, nullptr, nullptr, nullptr});
@@ -64,40 +63,13 @@ void Menu::select(int index, int direction) {
   }
 }
 
-void Menu::handleEvent(const sf::Event& event, sf::Vector2f uiMouse) {
+void Menu::onKeyPressed(sf::Keyboard::Key key) {
   if (items.empty()) return;
-
-  if (event.is<sf::Event::MouseMoved>()) {
-    int index = itemAt(uiMouse);
-    if (index >= 0 && items[index].isEnabled()) selected = index;
-    return;
-  }
-
-  if (const auto* click = event.getIf<sf::Event::MouseButtonPressed>()) {
-    if (click->button != sf::Mouse::Button::Left) return;
-    int index = itemAt(uiMouse);
-    if (index < 0 || !items[index].isEnabled()) return;
-    selected = index;
-
-    Item& item = items[index];
-    if (item.press) {
-      item.press();
-    } else if (item.change) {
-      sf::FloatRect rect = itemRect(index);
-      float valueStart = rect.position.x + rect.size.x - VALUE_WIDTH;
-      bool left = uiMouse.x >= valueStart && uiMouse.x < valueStart + VALUE_WIDTH / 2.0f;
-      item.step(left ? -1 : 1);
-    }
-    return;
-  }
-
-  const auto* key = event.getIf<sf::Event::KeyPressed>();
-  if (!key) return;
 
   if (!items[selected].isEnabled()) select(selected, 1);
 
   Item& item = items[selected];
-  switch (key->code) {
+  switch (key) {
   case sf::Keyboard::Key::Up:
   case sf::Keyboard::Key::W:
     select(selected - 1, -1);
@@ -124,6 +96,32 @@ void Menu::handleEvent(const sf::Event& event, sf::Vector2f uiMouse) {
     break;
   default:
     break;
+  }
+}
+
+void Menu::onMouseMoved(sf::Vector2f uiMouse) {
+  if (items.empty()) return;
+  int index = itemAt(uiMouse);
+  if (index >= 0 && items[index].isEnabled()) selected = index;
+}
+
+void Menu::onMousePressed(sf::Mouse::Button button) {
+  if (items.empty()) return;
+  if (button != sf::Mouse::Button::Left) return;
+  
+  sf::Vector2f uiMouse = window.getUIMousePos();
+  int index = itemAt(uiMouse);
+  if (index < 0 || !items[index].isEnabled()) return;
+  selected = index;
+
+  Item& item = items[index];
+  if (item.press) {
+    item.press();
+  } else if (item.change) {
+    sf::FloatRect rect = itemRect(index);
+    float valueStart = rect.position.x + rect.size.x - VALUE_WIDTH;
+    bool left = uiMouse.x >= valueStart && uiMouse.x < valueStart + VALUE_WIDTH / 2.0f;
+    item.step(left ? -1 : 1);
   }
 }
 

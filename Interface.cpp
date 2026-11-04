@@ -21,28 +21,34 @@ static const char* CONTROLS[][2] = {
 };
 
 Interface::Interface(Window& window, GameConfig& config)
-  : window(window), config(config), pauseMenu("PAUSED"), settingsMenu("SETTINGS") {
+  : window(window), config(config),
+    mainMenu(window), pauseMenu(window, "PAUSED"), settingsMenu(window, "SETTINGS") {
 
+  window.onKeyPressed.addListener([this](auto key) { if (Menu* menu = activeMenu()) menu->onKeyPressed(key); });
+  window.onMouseMoved.addListener([this](auto pos) { if (Menu* menu = activeMenu()) menu->onMouseMoved(pos); });
+  window.onMousePressed.addListener([this](auto button) { if (Menu* menu = activeMenu()) menu->onMousePressed(button); });
+  
   mainMenu.top = 112.0f;
-  mainMenu.addButton("PLAY", [this] { pending = Action::StartGame; });
+  mainMenu.addButton("PLAY", [this] { startGame(); });
   mainMenu.addButton("SETTINGS", [this] { open(Screen::Settings); });
-  mainMenu.addButton("EXIT", [this] { pending = Action::Exit; });
+  mainMenu.addButton("EXIT", [this] { exit(); });
 
   pauseMenu.top = 118.0f;
-  pauseMenu.addButton("RESUME", [this] { pending = Action::Resume; });
+  pauseMenu.addButton("RESUME", [this] { resume(); });
   pauseMenu.addButton("SETTINGS", [this] { open(Screen::Settings); });
-  pauseMenu.addButton("MAIN MENU", [this] { pending = Action::QuitToMenu; });
-  pauseMenu.onBack([this] { pending = Action::Resume; });
+  pauseMenu.addButton("MAIN MENU", [this] { quitToMenu(); });
+  pauseMenu.onBack([this] { resume(); });
 
   auto closeSettings = [this] {
     open(settingsReturn);
-    pending = Action::SettingsChanged;
   };
 
   settingsMenu.top = 106.0f;
   settingsMenu.addOption("VOLUME",
     [this] { return this->config.volume == 0 ? std::string("OFF") : std::to_string(this->config.volume) + "%"; },
-    [this](int direction) { changeVolume(direction); });
+    [this](int direction) { changeVolume(direction); },
+    nullptr,
+    [this](int direction) { return (direction < 0 && this->config.volume > 0) || (direction > 0 && this->config.volume < 100); });
   settingsMenu.addOption("WINDOW SIZE",
     [this] {
       sf::Vector2u size = this->window.getWindowSize();
@@ -103,14 +109,6 @@ const Menu* Interface::activeMenu() const {
 
 Menu* Interface::activeMenu() {
   return const_cast<Menu*>(static_cast<const Interface*>(this)->activeMenu());
-}
-
-Interface::Action Interface::handleEvent(const sf::Event& event, sf::Vector2f uiMouse) {
-  if (Menu* menu = activeMenu()) menu->handleEvent(event, uiMouse);
-
-  Action action = pending;
-  pending = Action::None;
-  return action;
 }
 
 void Interface::drawOverlay(sf::RenderTarget& target, uint8_t alpha) const {

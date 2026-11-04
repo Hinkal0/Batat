@@ -18,7 +18,7 @@ static const float FRAMERATE = 120.0f;
 const static float MENU_CAMERA_RADIUS = 320.0f;
 const static float MENU_CAMERA_PERIOD = 40000.0f;
 
-GameConfig GameManager::loadConfig() {
+static GameConfig loadConfig() {
   GameConfig config;
   config.window.title = "Batat";
   try {
@@ -28,7 +28,7 @@ GameConfig GameManager::loadConfig() {
   return config;
 }
 
-void GameManager::saveConfig() {
+static void saveConfig(GameConfig& config, const Window& window) {
   sf::Vector2u resolution = window.getWindowSize();
   config.window.w = resolution.x;
   config.window.h = resolution.y;
@@ -56,6 +56,22 @@ GameManager::GameManager()
   gameScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
 
   window.setCursorGrabbed(false);
+
+  window.onKeyPressed.addListener([this](auto key) {
+    if (inRun() && ui->getScreen() == Interface::Screen::None && key == sf::Keyboard::Key::Escape)
+      pause();
+    }
+  );
+  window.onFocusLost.addListener([this]() {
+    if (inRun() && ui->getScreen() == Interface::Screen::None)
+      pause();
+    }
+  );
+
+  ui->startGame.addListener([this]() { startRun(); });
+  ui->resume.addListener([this]() { resume(); });
+  ui->quitToMenu.addListener([this]() { endRun(); });
+  ui->exit.addListener([this]() { window.close(); });
 }
 
 void GameManager::startRun() {
@@ -96,40 +112,6 @@ void GameManager::endRun() {
   window.setCursorGrabbed(false);
 }
 
-void GameManager::handleEvents() {
-  while (const std::optional<sf::Event> event = window.pollEvent()) {
-    bool playing = inRun() && ui->getScreen() == Interface::Screen::None;
-
-    if (playing) {
-      const auto* key = event->getIf<sf::Event::KeyPressed>();
-      if ((key && key->code == sf::Keyboard::Key::Escape) || event->is<sf::Event::FocusLost>()) {
-        pause();
-      }
-      continue;
-    }
-
-    switch (ui->handleEvent(*event, window.getUIMousePos())) {
-    case Interface::Action::StartGame:
-      startRun();
-      break;
-    case Interface::Action::Resume:
-      resume();
-      break;
-    case Interface::Action::QuitToMenu:
-      endRun();
-      break;
-    case Interface::Action::Exit:
-      window.close();
-      break;
-    case Interface::Action::SettingsChanged:
-      saveConfig();
-      break;
-    case Interface::Action::None:
-      break;
-    }
-  }
-}
-
 void GameManager::update(float deltaTime) {
   if (!inRun()) {
     menuTime += deltaTime;
@@ -156,8 +138,7 @@ void GameManager::update(float deltaTime) {
 void GameManager::run() {
   auto start = std::chrono::high_resolution_clock::now();
   while (window.isOpen()) {
-    handleEvents();
-    if (!window.isOpen()) break;
+    window.pollEvents();
 
     auto dt = (std::chrono::high_resolution_clock::now()-start);
     deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(dt).count()/1000.0f;
@@ -172,7 +153,7 @@ void GameManager::run() {
     }
   }
 
-  saveConfig();
+  saveConfig(config, window);
   Fonts::unload();
   Textures::unload();
 }

@@ -19,8 +19,7 @@ public:
     StartGame,
     Resume,
     QuitToMenu,
-    Exit,
-    SettingsChanged
+    Exit
   };
 
 private:
@@ -29,7 +28,7 @@ private:
 
   Screen screen = Screen::Main;
   Screen settingsReturn = Screen::Main;
-  Action pending = Action::None;
+  Action action = Action::None;
 
   Menu mainMenu;
   Menu pauseMenu;
@@ -51,8 +50,11 @@ public:
   Interface(const Interface&) = delete;
   Interface operator=(const Interface&) = delete;
 
+  Event<> startGame;
+  Event<> resume;
+  Event<> quitToMenu;
+  Event<> exit;
+
   Screen getScreen() const { return screen; }
   void open(Screen next);
-
-  Action handleEvent(const sf::Event& event, sf::Vector2f uiMouse);
 };

@@ -81,29 +81,35 @@ void Window::close() {
   handle.close();
 }
 
-std::optional<sf::Event> Window::pollEvent() {
-  std::optional<sf::Event> event = handle.pollEvent();
-  if (!event) return event;
-  
-  if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
-    if (key->code == sf::Keyboard::Key::Enter && key->alt) {
-      setFullscreen(!fullscreen);
-      if (!(event = handle.pollEvent())) return event;
+void Window::pollEvents() {
+  while (const auto& event = handle.pollEvent()) {
+    if (event->is<sf::Event::Closed>()) {
+      handle.close();
+    } else if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+      if (!fullscreen) windowedSize = resized->size;
+      if (requestedSize) {
+        checkShrunk(*requestedSize, resized->size);
+        requestedSize.reset();
+      }
+      updateViews();
+    } else if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+      if (key->code == sf::Keyboard::Key::Enter && key->alt) {
+        setFullscreen(!fullscreen);
+        continue;
+      }
+      onKeyPressed(key->code);
+    } else if (const auto* key = event->getIf<sf::Event::KeyReleased>()) {
+      onKeyReleased(key->code);
+    } else if (const auto* mouse = event->getIf<sf::Event::MouseMoved>()) {
+      onMouseMoved(getUIMousePos());
+    } else if (const auto* mouse = event->getIf<sf::Event::MouseButtonPressed>()) {
+      onMousePressed(mouse->button);
+    } else if (const auto* mouse = event->getIf<sf::Event::MouseButtonReleased>()) {
+      onMouseReleased(mouse->button);
+    } else if (event->is<sf::Event::FocusLost>()) {
+      onFocusLost();
     }
   }
-
-  if (event->is<sf::Event::Closed>()) {
-    handle.close();
-  } else if (const auto* resized = event->getIf<sf::Event::Resized>()) {
-    if (!fullscreen) windowedSize = resized->size;
-    if (requestedSize) {
-      checkShrunk(*requestedSize, resized->size);
-      requestedSize.reset();
-    }
-    updateViews();
-  }
-
-  return event;
 }
 
 void Window::setFullscreen(bool value) {
@@ -152,9 +158,5 @@ sf::Vector2f Window::getMousePos(const Scene& scene) const {
 }
 
 sf::Vector2f Window::getUIMousePos(void) const {
-  return mapPixelToUI(sf::Mouse::getPosition(handle));
-}
-
-sf::Vector2f Window::mapPixelToUI(sf::Vector2i pixel) const {
-  return handle.mapPixelToCoords(pixel, uiView);
+  return handle.mapPixelToCoords(sf::Mouse::getPosition(handle), uiView);
 }

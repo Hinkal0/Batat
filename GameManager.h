@@ -30,15 +30,11 @@ class GameManager {
 
   float menuTime = 0.0f;
 
-  static GameConfig loadConfig();
-  void saveConfig();
-
   void startRun();
   void pause();
   void resume();
   void endRun();
 
-  void handleEvents();
   void update(float dt);
 
 public:
