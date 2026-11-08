@@ -31,7 +31,7 @@ const std::unordered_set<std::shared_ptr<UIElement>>& Scene::getLayer(UILayer la
 void Scene::update(float deltaTime) {
   for (auto& layer : layers) {
     for (auto& object : layer) {
-      object->update(deltaTime);
+      if (!object->destroyed) object->update(deltaTime);
     }
   }
 

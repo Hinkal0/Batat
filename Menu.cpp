@@ -1,6 +1,7 @@
 #include "Menu.h"
-#include "Text.h"
 #include <cmath>
+#include "Text.h"
+#include "InputSystem.h"
 
 static const float BUTTON_WIDTH = 120.0f;
 static const float OPTION_WIDTH = 230.0f;
@@ -109,7 +110,7 @@ void Menu::onMousePressed(sf::Mouse::Button button) {
   if (items.empty()) return;
   if (button != sf::Mouse::Button::Left) return;
   
-  sf::Vector2f uiMouse = window.getUIMousePos();
+  sf::Vector2f uiMouse = InputSystem::getUIMousePos();
   int index = itemAt(uiMouse);
   if (index < 0 || !items[index].isEnabled()) return;
   selected = index;

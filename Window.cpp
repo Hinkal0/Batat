@@ -1,5 +1,6 @@
 #include "Window.h"
 #include <algorithm>
+#include "InputSystem.h"
 
 static float SCALE = 4.0f;
 static sf::Vector2u MIN_SIZE = {480, 270};
@@ -97,15 +98,15 @@ void Window::pollEvents() {
         setFullscreen(!fullscreen);
         continue;
       }
-      onKeyPressed(key->code);
+      InputSystem::onKeyPressed(key->code);
     } else if (const auto* key = event->getIf<sf::Event::KeyReleased>()) {
-      onKeyReleased(key->code);
+      InputSystem::onKeyReleased(key->code);
     } else if (const auto* mouse = event->getIf<sf::Event::MouseMoved>()) {
-      onMouseMoved(getUIMousePos());
+      InputSystem::onMouseMoved(InputSystem::getUIMousePos());
     } else if (const auto* mouse = event->getIf<sf::Event::MouseButtonPressed>()) {
-      onMousePressed(mouse->button);
+      InputSystem::onMousePressed(mouse->button);
     } else if (const auto* mouse = event->getIf<sf::Event::MouseButtonReleased>()) {
-      onMouseReleased(mouse->button);
+      InputSystem::onMouseReleased(mouse->button);
     } else if (event->is<sf::Event::FocusLost>()) {
       onFocusLost();
     }
@@ -149,14 +150,4 @@ void Window::draw(const Scene& scene) {
   scene.drawUI(handle);
 
   handle.display();
-}
-
-sf::Vector2f Window::getMousePos(const Scene& scene) const {
-  sf::View view = gameView;
-  view.setCenter(scene.cameraPos);
-  return handle.mapPixelToCoords(sf::Mouse::getPosition(handle), view);
-}
-
-sf::Vector2f Window::getUIMousePos(void) const {
-  return handle.mapPixelToCoords(sf::Mouse::getPosition(handle), uiView);
 }

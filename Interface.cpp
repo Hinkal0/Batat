@@ -1,7 +1,8 @@
 #include "Interface.h"
-#include "Text.h"
 #include <SFML/Audio/Listener.hpp>
 #include <algorithm>
+#include "Text.h"
+#include "InputSystem.h"
 
 static const int VOLUME_STEP = 10;
 
@@ -24,9 +25,9 @@ Interface::Interface(Window& window, GameConfig& config)
   : window(window), config(config),
     mainMenu(window), pauseMenu(window, "PAUSED"), settingsMenu(window, "SETTINGS") {
 
-  window.onKeyPressed.addListener([this](auto key) { if (Menu* menu = activeMenu()) menu->onKeyPressed(key); });
-  window.onMouseMoved.addListener([this](auto pos) { if (Menu* menu = activeMenu()) menu->onMouseMoved(pos); });
-  window.onMousePressed.addListener([this](auto button) { if (Menu* menu = activeMenu()) menu->onMousePressed(button); });
+  InputSystem::onKeyPressed.addListener([this](auto key) { if (Menu* menu = activeMenu()) menu->onKeyPressed(key); });
+  InputSystem::onMouseMoved.addListener([this](auto pos) { if (Menu* menu = activeMenu()) menu->onMouseMoved(pos); });
+  InputSystem::onMousePressed.addListener([this](auto button) { if (Menu* menu = activeMenu()) menu->onMousePressed(button); });
   
   mainMenu.top = 112.0f;
   mainMenu.addButton("PLAY", [this] { startGame(); });

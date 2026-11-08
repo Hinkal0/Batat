@@ -24,14 +24,10 @@ class Window {
   void updateViews();
   void checkShrunk(sf::Vector2u requested, sf::Vector2u actual);
 
+  friend class InputSystem;
 public:
   static constexpr sf::Vector2f UI_SIZE = {480.0f, 270.0f};
 
-  Event<sf::Keyboard::Key> onKeyPressed;
-  Event<sf::Keyboard::Key> onKeyReleased;
-  Event<sf::Vector2f> onMouseMoved;
-  Event<sf::Mouse::Button> onMousePressed;
-  Event<sf::Mouse::Button> onMouseReleased;
   Event<> onFocusLost;
 
   Window() = default;
@@ -53,7 +49,4 @@ public:
   void setCursorGrabbed(bool value);
 
   void draw(const Scene& scene);
-
-  sf::Vector2f getMousePos(const Scene& scene) const;
-  sf::Vector2f getUIMousePos(void) const;
 };
