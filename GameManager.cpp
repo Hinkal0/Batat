@@ -1,13 +1,15 @@
 #include "GameManager.h"
-#include "Hud.h"
-#include "Parser.h"
-#include "Text.h"
-#include "Resources.h"
-#include <SFML/Audio/Listener.hpp>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <random>
+#include <stdexcept>
+#include <SFML/Audio/Listener.hpp>
+#include "Hud.h"
+#include "Parser.h"
+#include "Text.h"
+#include "Resources.h"
+#include "InputSystem.h"
 
 static const char* CONFIG_FILE = "config.ini";
 
@@ -41,8 +43,11 @@ GameManager::GameManager()
   uint32_t seed = time(nullptr);
   srand(seed);
 
-  Textures::load();
-  Fonts::load();
+  InputSystem::init(window);
+
+  if (!Textures::load() || !Fonts::load())
+    throw std::runtime_error("Could not load game resources");
+
   sf::Listener::setGlobalVolume((float)config.volume);
 
   menuScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
@@ -57,7 +62,7 @@ GameManager::GameManager()
 
   window.setCursorGrabbed(false);
 
-  window.onKeyPressed.addListener([this](auto key) {
+  InputSystem::onKeyPressed.addListener([this](auto key) {
     if (inRun() && ui->getScreen() == Interface::Screen::None && key == sf::Keyboard::Key::Escape)
       pause();
     }
@@ -126,7 +131,7 @@ void GameManager::update(float deltaTime) {
 
   runStats.time += deltaTime;
 
-  sf::Vector2f mouse = window.getMousePos(gameScene);
+  sf::Vector2f mouse = InputSystem::getMousePos(gameScene);
   player->aimAt(mouse);
   gameScene.update(deltaTime);
 
