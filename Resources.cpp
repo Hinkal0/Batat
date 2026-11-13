@@ -7,6 +7,10 @@ namespace Textures {
       projectile.emplace("textures/projectile.png");
       slash.emplace("textures/slash.png");
       tilemap.emplace("textures/tilemap.png");
+      const char* names[] = {"radish_runner", "pea_shooter", "onion_guard", "yabloko"};
+      for (size_t i = 0; i < enemies.size(); ++i) {
+        enemies[i].emplace(std::string("textures/") + names[i] + ".png");
+      }
     } catch (sf::Exception& e) {
       return false;
     }
@@ -18,6 +22,7 @@ namespace Textures {
     projectile.reset();
     slash.reset();
     tilemap.reset();
+    for (auto& texture : enemies) texture.reset();
   }
 };
 
