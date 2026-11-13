@@ -36,24 +36,37 @@ add_custom_target(fonts
 )
 
 add_executable(batat
+  Character.h
+  Config.h
+  Enemy.cpp
+  Enemy.h
   entry.cpp
   Event.h
   GameManager.cpp
   GameManager.h
   Hud.cpp
   Hud.h
+  InputSystem.cpp
+  InputSystem.h
   Interface.cpp
   Interface.h
   Map.cpp
   Map.h
   Menu.cpp
   Menu.h
+  Object.h
+  OnionGuard.cpp
+  OnionGuard.h
   Parser.cpp
   Parser.h
+  PeaShooter.cpp
+  PeaShooter.h
   Player.cpp
   Player.h
   Projectile.cpp
   Projectile.h
+  RadishRunner.cpp
+  RadishRunner.h
   Resources.cpp
   Resources.h
   Scene.cpp
@@ -62,8 +75,11 @@ add_executable(batat
   Slash.h
   Text.cpp
   Text.h
+  UIElement.h
   Window.cpp
   Window.h
+  Yabloko.cpp
+  Yabloko.h
 )
 
 set_target_properties(batat 

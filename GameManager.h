@@ -31,6 +31,7 @@ class GameManager {
   float menuTime = 0.0f;
 
   void startRun();
+  void spawnEnemies();
   void pause();
   void resume();
   void endRun();

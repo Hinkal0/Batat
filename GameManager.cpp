@@ -10,6 +10,10 @@
 #include "Text.h"
 #include "Resources.h"
 #include "InputSystem.h"
+#include "OnionGuard.h"
+#include "PeaShooter.h"
+#include "RadishRunner.h"
+#include "Yabloko.h"
 
 static const char* CONFIG_FILE = "config.ini";
 
@@ -87,6 +91,7 @@ void GameManager::startRun() {
   player->setPosition(gameScene.map->getSpawnPoint());
   player->lockInputUntilRelease();
   gameScene.spawn(LAYER_CHARACTERS, player);
+  spawnEnemies();
 
   runStats = {};
   gameScene.spawn(UI_LAYER_HUD, std::make_shared<Hud>(*player, runStats));
@@ -95,6 +100,31 @@ void GameManager::startRun() {
   gameScene.spawn(UI_LAYER_MENU, ui);
 
   window.setCursorGrabbed(true);
+}
+
+void GameManager::spawnEnemies() {
+  const auto& rooms = gameScene.map->getRooms();
+  const float tile = gameScene.map->getTileSize();
+  int sequence = 0;
+  
+  for (size_t i = 1; i < rooms.size(); ++i) {
+    const auto& room = rooms[i];
+    int count = std::clamp(room.size.x * room.size.y / 90, 1, 3);
+    for (int j = 0; j < count; ++j) {
+      sf::Vector2f position((room.position.x + 1.5f + j * (room.size.x - 3.0f) / count) * tile,
+                           (room.position.y + room.size.y / 2 + 0.5f) * tile);
+      if ((position - player->getPosition()).length() < 450.0f) continue;
+      std::shared_ptr<Enemy> enemy;
+      switch (sequence++ % 4) {
+        case 0: enemy = std::make_shared<RadishRunner>(gameScene, player); break;
+        case 1: enemy = std::make_shared<PeaShooter>(gameScene, player); break;
+        case 2: enemy = std::make_shared<OnionGuard>(gameScene, player); break;
+        case 3: enemy = std::make_shared<Yabloko>(gameScene, player); break;
+      }
+      enemy->setPosition(position);
+      gameScene.spawn(LAYER_CHARACTERS, enemy);
+    }
+  }
 }
 
 void GameManager::pause() {
@@ -133,7 +163,19 @@ void GameManager::update(float deltaTime) {
 
   sf::Vector2f mouse = InputSystem::getMousePos(gameScene);
   player->aimAt(mouse);
+  auto enemyCount = [this] {
+    int count = 0;
+    for (const auto& object : gameScene.getLayer(LAYER_CHARACTERS))
+      if (dynamic_cast<Enemy*>(object.get())) ++count;
+    return count;
+  };
+  int before = enemyCount();
   gameScene.update(deltaTime);
+  runStats.score += (before - enemyCount()) * 10;
+  if (player->getHealth() == 0) {
+    endRun();
+    return;
+  }
 
   gameScene.cameraPos = (
     mouse+player->getPosition().componentWiseMul({2,2}))
