@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <queue>
+#include <limits>
 
 static const int MIN_LEAF = 12;
 static const int MAX_LEAF = 26;
@@ -259,4 +261,87 @@ void Map::draw(sf::RenderTarget& target, sf::RenderStates states) const {
       target.draw(sprite, states);
     }
   }
+}
+
+bool Map::hasLineOfSight(sf::Vector2f from, sf::Vector2f to) const {
+  auto cell = [this](sf::Vector2f point) {
+    return sf::Vector2i((int)std::floor(point.x / tileSize),
+                        (int)std::floor(point.y / tileSize));
+  };
+  sf::Vector2i current = cell(from), goal = cell(to);
+  sf::Vector2f offset = to - from;
+  
+  int stepX = offset.x > 0 ? 1 : -1, stepY = offset.y > 0 ? 1 : -1;
+  const float infinity = std::numeric_limits<float>::infinity();
+  float deltaX = offset.x != 0 ? tileSize / std::abs(offset.x) : infinity;
+  float deltaY = offset.y != 0 ? tileSize / std::abs(offset.y) : infinity;
+  float nextX = offset.x != 0 ? ((current.x + (stepX > 0)) * tileSize - from.x) / offset.x : infinity;
+  float nextY = offset.y != 0 ? ((current.y + (stepY > 0)) * tileSize - from.y) / offset.y : infinity;
+  while (true) {
+    if (getTile(current.x, current.y) == Tile::Wall) return false;
+    if (current == goal) return true;
+    if (nextX == nextY) {
+      if (getTile(current.x + stepX, current.y) == Tile::Wall ||
+          getTile(current.x, current.y + stepY) == Tile::Wall) return false;
+
+      current += {stepX, stepY};
+      nextX += deltaX;
+      nextY += deltaY;
+    } else if (nextX < nextY) {
+      current.x += stepX;
+      nextX += deltaX;
+    } else {
+      current.y += stepY;
+      nextY += deltaY;
+    }
+  }
+}
+
+sf::Vector2f Map::nextWaypoint(sf::Vector2f from, sf::Vector2f to, sf::Vector2f bodySize) const {
+  auto cell = [this](sf::Vector2f point) {
+    return sf::Vector2i((int)std::floor(point.x / tileSize),
+                        (int)std::floor(point.y / tileSize));
+  };
+  auto valid = [this](sf::Vector2i c) {
+    return c.x >= 0 && c.y >= 0 && c.x < (int)size.x && c.y < (int)size.y;
+  };
+  auto center = [this](sf::Vector2i c) {
+    return sf::Vector2f((c.x + 0.5f) * tileSize, (c.y + 0.5f) * tileSize);
+  };
+
+  sf::Vector2i start = cell(from), goal = cell(to);
+  if (!valid(start) || !valid(goal) || getTile(start.x, start.y) == Tile::Wall ||
+      getTile(goal.x, goal.y) == Tile::Wall) return from;
+  if (start == goal) return to;
+
+  auto index = [this](sf::Vector2i c) { return c.y * (int)size.x + c.x; };
+  std::vector<int> previous(size.x * size.y, -1);
+  std::queue<sf::Vector2i> bfs;
+  bfs.push(start);
+  previous[index(start)] = index(start);
+  const sf::Vector2i directions[8] = {{1,0}, {-1,0}, {0,1}, {0,-1}, {1,1}, {1,-1}, {-1,1}, {-1,-1}};
+  while (!bfs.empty() && previous[index(goal)] == -1) {
+    auto current = bfs.front(); bfs.pop();
+    for (auto direction : directions) {
+      if (direction.x != 0 && direction.y != 0) {
+        if (getTile(current.x + direction.x, current.y) == Tile::Wall ||
+            getTile(current.x, current.y + direction.y) == Tile::Wall) continue;
+      }
+
+      auto next = current + direction;
+      if (!valid(next) || previous[index(next)] != -1 ||
+          collides(sf::FloatRect(center(next) - bodySize / 2.0f, bodySize))) continue;
+      previous[index(next)] = index(current);
+      bfs.push(next);
+    }
+  }
+
+  int current = index(goal);
+  if (previous[current] == -1) return from;
+  while (previous[current] != index(start)) current = previous[current];
+  sf::Vector2f origin = center(start);
+  sf::Vector2f next = center({current % (int)size.x, current / (int)size.x});
+
+  if ((next != origin) && (origin-from).length() > 1.0f) return origin;
+  return next;
 }

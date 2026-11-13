@@ -40,6 +40,10 @@ public:
   sf::Vector2f resolveMovement(sf::FloatRect box, sf::Vector2f movement) const;
 
   sf::Vector2f getSpawnPoint() const;
+  float getTileSize() const { return tileSize; }
+  bool hasLineOfSight(sf::Vector2f from, sf::Vector2f to) const;
+  sf::Vector2f nextWaypoint(sf::Vector2f from, sf::Vector2f to,
+      sf::Vector2f bodySize) const;
 
   const std::vector<sf::IntRect>& getRooms() const { return rooms; }
 };
