@@ -6,9 +6,9 @@
 
 static const sf::Vector2f HITBOX_SIZE = {64.0f, 68.0f};
 
-static const sf::Vector2f EYES[] = {{8.0f, 9.0f}, {15.0f, 9.0f}};
+static const sf::Vector2f EYES[] = {{7.0f, 10.0f}, {15.0f, 10.0f}};
 
-static const sf::Vector2f PIVOT = {13.0f, 21.0f};
+static const sf::Vector2f PIVOT = {13.0f, 23.0f};
 
 static const float IDLE_PERIOD = 1400.0f;
 static const float IDLE_SQUASH = 0.05f;
@@ -55,7 +55,14 @@ void Player::slash() {
   scene.spawn(LAYER_EFFECTS, activeSlash);
 }
 
+void Player::takeDamage(int amount) {
+  if (damageCooldown > 0.0f) return;
+  Character::takeDamage(amount);
+  damageCooldown = 800.0f;
+}
+
 void Player::update(float deltaTime) {
+  damageCooldown = std::max(0.0f, damageCooldown - deltaTime);
   sf::Vector2f direction = {0,0};
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::A)) {
     direction.x -= 1.0f;
@@ -132,13 +139,21 @@ void Player::draw(sf::RenderTarget& target, sf::RenderStates states) const {
 
   states.transform *= animationTransform();
   
-  target.draw(sf::Sprite(getTexture()), states);
+  sf::Sprite body(getTexture());
+  if (damageCooldown > 0.0f && (int)(damageCooldown / 100.0f) % 2 == 0)
+    body.setColor(sf::Color(255, 120, 120, 160));
+  target.draw(body, states);
 
   sf::RectangleShape pupil({2.0f, 3.0f});
-  sf::Vector2f offset = {aimDirection.x >= 0.0f ? 1.0f : 0.0f, aimDirection.y >= 0.0f ? 0.0f : 1.0f};
-  pupil.setFillColor(sf::Color(25, 25, 25));
+  sf::RectangleShape highlight({1.0f, 1.0f});
+  highlight.setFillColor(sf::Color::White);
+  sf::Vector2f offset = {std::round(aimDirection.x + 1.0f),
+                         std::round((1.0f - aimDirection.y) * 0.5f)};
+  pupil.setFillColor(sf::Color(53, 37, 43));
   for (sf::Vector2f eye : EYES) {
     pupil.setPosition(eye + offset);
     target.draw(pupil, states);
+    highlight.setPosition(eye + offset);
+    target.draw(highlight, states);
   }
 }

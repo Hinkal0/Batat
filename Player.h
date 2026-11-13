@@ -18,6 +18,7 @@ class Player : public Character {
   PlayerStats stats = {};
 
   sf::Vector2f aimDirection = {1.0f, 0.0f};
+  float damageCooldown = 0.0f;
   float fireCooldown = 0.0f; 
   float slashCooldown = 0.0f;
   bool slashHeld = false;
@@ -41,6 +42,7 @@ public:
   sf::FloatRect getHitbox() const override;
 
   void aimAt(sf::Vector2f target);
+  void takeDamage(int amount) override;
 
   void lockInputUntilRelease();
 
