@@ -1,5 +1,4 @@
 #include "Hud.h"
-#include <cstdio>
 #include <string>
 #include "core/GameManager.h"
 #include "Text.h"
@@ -41,21 +40,14 @@ static void drawPanel(sf::RenderTarget& target, sf::Vector2f position, sf::Vecto
   target.draw(panel, states);
 }
 
-static std::string formatTime(float ms) {
-  int total = (int)(ms / 1000.0f);
-  int hours = total / 3600, minutes = total / 60 % 60, seconds = total % 60;
-  char buffer[128];
-  std::snprintf(buffer, sizeof(buffer), "%d:%02d:%02d", hours, minutes, seconds);
-  return buffer;
-}
-
 void Hud::update(float) {
   healthBar.fill = static_cast<float>(player.getHealth()) / player.getMaxHealth();
   xpBar.fill = stats.xpToNextLevel != 0 ? static_cast<float>(stats.xp) / stats.xpToNextLevel : 0.0f;
   slashBar.fill = player.getSlashReadiness();
   slashBar.color = slashBar.fill >= 1.0f ? SLASH_READY_COLOR : SLASH_CHARGING_COLOR;
-  floorLabel.value = std::to_string(stats.floor);
-  timeLabel.value = formatTime(stats.time);
+  floorLabel.value = std::to_string(stats.floor) + "/" + std::to_string(RunStats::FLOOR_COUNT);
+  auto seconds = std::chrono::duration_cast<std::chrono::seconds>(stats.time);
+  timeLabel.value = Text::formatTime(seconds);
 }
 
 void Hud::drawContents(sf::RenderTarget& target, sf::RenderStates states) const {
@@ -86,4 +78,15 @@ void Hud::drawContents(sf::RenderTarget& target, sf::RenderStates states) const 
 
   target.draw(floorLabel, states);
   target.draw(timeLabel, states);
+
+  std::string objective;
+  if (stats.enemiesRemaining > 0) {
+    objective = "ENEMIES LEFT " + std::to_string(stats.enemiesRemaining);
+  } else if (stats.isExitOpen) {
+    objective = "EXIT OPEN";
+  } else {
+    objective = stats.floor == RunStats::FLOOR_COUNT ? "FIND THE FINAL ROOM" : "FIND THE EXIT ROOM";
+  }
+  Text::draw(target, objective, {Window::UI_SIZE.x / 2.0f, Window::UI_SIZE.y - 14.0f},
+    1, VALUE_COLOR, Text::Align::Center, true, states);
 }

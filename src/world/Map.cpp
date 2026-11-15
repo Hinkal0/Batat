@@ -6,9 +6,9 @@
 #include <limits>
 #include "core/Resources.h"
 
-static const int MIN_LEAF = 12;
-static const int MAX_LEAF = 26;
-static const int MIN_ROOM = 6;
+static const int MIN_LEAF = 16;
+static const int MAX_LEAF = 30;
+static const int MIN_ROOM = 10;
 static const int CORRIDOR_WIDTH = 3;
 
 enum WallShapeBits : uint8_t {
@@ -76,13 +76,39 @@ sf::IntRect Map::tileRect(uint8_t tile) const {
   return sf::IntRect({tile % TILEMAP_WIDTH * tileW, tile / TILEMAP_WIDTH * tileW}, {tileW, tileW});
 }
 
-void Map::generate() {
+void Map::generate(bool withExit) {
   tiles.assign(size.x * size.y, Tile::Wall);
   rooms.clear();
+  lockedRoom.reset();
+  exitBounds.reset();
+  exitOpen = false;
 
   splitAndCarve(sf::IntRect({1, 1}, {(int)size.x - 2, (int)size.y - 2}));
+  buildDoorBounds();
+  if (withExit) {
+    sf::Vector2f padSize(tileSize * 1.25f, tileSize * 1.25f);
+    exitBounds = sf::FloatRect(roomCenter(rooms.back()) - padSize / 2.0f, padSize);
+  }
 
   buildVisuals();
+}
+
+bool Map::canUseExit(sf::Vector2f position) const {
+  return exitOpen && exitBounds && exitBounds->contains(position);
+}
+
+std::optional<std::size_t> Map::getRoomContaining(const sf::FloatRect& body) const {
+  sf::Vector2f bodyEnd = body.position + body.size;
+  for (std::size_t i = 0; i < rooms.size(); ++i) {
+    const auto& room = rooms[i];
+    sf::Vector2f start = sf::Vector2f(room.position) * tileSize;
+    sf::Vector2f end = sf::Vector2f(room.position + room.size) * tileSize;
+    if (body.position.x >= start.x && body.position.y >= start.y &&
+        bodyEnd.x <= end.x && bodyEnd.y <= end.y) {
+      return i;
+    }
+  }
+  return std::nullopt;
 }
 
 sf::Vector2i Map::splitAndCarve(sf::IntRect area) {
@@ -155,8 +181,44 @@ void Map::carveCorridor(sf::Vector2i from, sf::Vector2i to) {
   carveLine(corner, to);
 }
 
+void Map::buildDoorBounds() {
+  roomDoors.assign(rooms.size(), {});
+  for (std::size_t roomIndex = 0; roomIndex < rooms.size(); ++roomIndex) {
+    const auto& room = rooms[roomIndex];
+    const auto end = room.position + room.size;
+    auto& doors = roomDoors[roomIndex];
+
+    auto addDoorsAlong = [&](sf::Vector2i start, sf::Vector2i direction, int length) {
+      int run = 0;
+      for (int i = 0; i <= length; ++i) {
+        const sf::Vector2i tile = start + direction * i;
+        const bool opening = i < length && getTile(tile.x, tile.y) == Tile::Floor;
+        if (run > 0 && (!opening || run == CORRIDOR_WIDTH)) {
+          doors.emplace_back(tile - direction * run, sf::Vector2i{1, 1} + direction * (run - 1));
+          run = 0;
+        }
+        if (opening) ++run;
+      }
+    };
+
+    addDoorsAlong({room.position.x - 1, room.position.y - 1}, {1, 0}, room.size.x + 2);
+    addDoorsAlong({room.position.x - 1, end.y}, {1, 0}, room.size.x + 2);
+    addDoorsAlong({room.position.x - 1, room.position.y}, {0, 1}, room.size.y);
+    addDoorsAlong({end.x, room.position.y}, {0, 1}, room.size.y);
+  }
+}
+
+bool Map::isClosedDoor(sf::Vector2i tile) const {
+  if (!lockedRoom) return false;
+  const auto& doors = roomDoors[*lockedRoom];
+  return std::any_of(doors.begin(), doors.end(), [tile](const sf::IntRect& door) {
+    return door.contains(tile);
+  });
+}
+
 Map::Tile Map::getTile(int x, int y) const {
   if (x < 0 || y < 0 || x >= (int)size.x || y >= (int)size.y) return Tile::Wall;
+  if (isClosedDoor({x, y})) return Tile::Wall;
   return tiles[y * size.x + x];
 }
 
@@ -204,7 +266,10 @@ sf::Vector2f Map::resolveMovement(sf::FloatRect box, sf::Vector2f movement) cons
 }
 
 sf::Vector2f Map::getSpawnPoint() const {
-  const sf::IntRect& room = rooms.front();
+  return roomCenter(rooms.front());
+}
+
+sf::Vector2f Map::roomCenter(const sf::IntRect& room) const {
   return {
     (room.position.x + room.size.x / 2.0f) * tileSize,
     (room.position.y + room.size.y / 2.0f) * tileSize
@@ -261,6 +326,36 @@ void Map::draw(sf::RenderTarget& target, sf::RenderStates states) const {
       target.draw(sprite, states);
     }
   }
+
+  if (lockedRoom) drawClosedDoors(target, states);
+  if (exitBounds) drawExit(target, states);
+}
+
+void Map::drawClosedDoors(sf::RenderTarget& target, sf::RenderStates states) const {
+  sf::Sprite gate(*Textures::roomGate);
+  const sf::Vector2f sourceSize(gate.getTexture().getSize());
+  gate.setOrigin(sourceSize / 2.0f);
+
+  const auto& room = rooms[*lockedRoom];
+  for (const auto& bounds : roomDoors[*lockedRoom]) {
+    const bool vertical = bounds.position.y >= room.position.y &&
+      bounds.position.y < room.position.y + room.size.y;
+    const float length = static_cast<float>(std::max(bounds.size.x, bounds.size.y)) * tileSize;
+    gate.setScale({length / sourceSize.x, -tileSize / sourceSize.y});
+    gate.setRotation(sf::degrees(vertical ? 90.0f : 0.0f));
+    gate.setPosition((sf::Vector2f(bounds.position) + sf::Vector2f(bounds.size) / 2.0f) * tileSize);
+    target.draw(gate, states);
+  }
+}
+
+void Map::drawExit(sf::RenderTarget& target, sf::RenderStates states) const {
+  sf::Sprite exit(*Textures::floorExit);
+  const sf::Vector2i atlasSize(exit.getTexture().getSize());
+  const sf::Vector2i frameSize{atlasSize.x / 2, atlasSize.y};
+  exit.setTextureRect({{exitOpen ? frameSize.x : 0, 0}, frameSize});
+  exit.setScale({exitBounds->size.x / frameSize.x, -exitBounds->size.y / frameSize.y});
+  exit.setPosition({exitBounds->position.x, exitBounds->position.y + exitBounds->size.y});
+  target.draw(exit, states);
 }
 
 bool Map::hasLineOfSight(sf::Vector2f from, sf::Vector2f to) const {

@@ -1,13 +1,14 @@
 #include "GameManager.h"
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
-#include <random>
+#include <cstdlib>
+#include <ctime>
 #include <stdexcept>
 #include <SFML/Audio/Listener.hpp>
 #include "ui/Hud.h"
 #include "config/Parser.h"
-#include "ui/Text.h"
 #include "Resources.h"
 #include "InputSystem.h"
 #include "entities/enemies/OnionGuard.h"
@@ -15,9 +16,8 @@
 #include "entities/enemies/RadishRunner.h"
 #include "entities/enemies/Yabloko.h"
 
-static const char* CONFIG_FILE = "config.ini";
+static const char* CONFIG_FILE = "config/config.ini";
 
-static float deltaTime = 0.0f;
 static float renderDelta = 0.0f;
 static const float FRAMERATE = 120.0f;
 
@@ -62,8 +62,6 @@ GameManager::GameManager()
   ui->open(Interface::Screen::Main);
   menuScene.spawn(UI_LAYER_MENU, ui);
 
-  gameScene.map = std::make_shared<Map>(sf::Vector2u{100, 70}, 64.0f);
-
   window.setCursorGrabbed(false);
 
   InputSystem::onKeyPressed.addListener([this](auto key) {
@@ -84,45 +82,106 @@ GameManager::GameManager()
 }
 
 void GameManager::startRun() {
-  gameScene.clearObjects();
-  gameScene.map->generate();
-
+  runStats = {};
   player = std::make_shared<Player>(gameScene);
-  player->setPosition(gameScene.map->getSpawnPoint());
-  player->lockInputUntilRelease();
+  loadFloor();
+  ui->open(Interface::Screen::None);
+  window.setCursorGrabbed(true);
+}
+
+void GameManager::loadFloor() {
+  gameScene.clearObjects();
+  roomEnemies.clear();
+  activeRoom.reset();
+  runStats.enemiesRemaining = 0;
+  runStats.isExitOpen = false;
+
+  unsigned floorOffset = static_cast<unsigned>(runStats.floor - 1);
+  sf::Vector2u size{50 + 2 * floorOffset, 40 + floorOffset};
+  gameScene.map = std::make_shared<Map>(size, 64.0f);
+  gameScene.map->generate(runStats.floor < RunStats::FLOOR_COUNT);
+  gameScene.cameraPos = gameScene.map->getSpawnPoint();
+
+  player->enterFloor(gameScene.cameraPos);
   gameScene.spawn(LAYER_CHARACTERS, player);
   spawnEnemies();
 
-  runStats = {};
   gameScene.spawn(UI_LAYER_HUD, std::make_shared<Hud>(*player, runStats));
-
-  ui->open(Interface::Screen::None);
   gameScene.spawn(UI_LAYER_MENU, ui);
+}
 
-  window.setCursorGrabbed(true);
+void GameManager::finishRun() {
+  auto time = std::chrono::duration_cast<std::chrono::milliseconds>(runStats.time);
+  if (!config.bestTime || time < *config.bestTime) {
+    config.bestTime = time;
+    saveConfig(config, window);
+  }
+  endRun();
 }
 
 void GameManager::spawnEnemies() {
   const auto& rooms = gameScene.map->getRooms();
   const float tile = gameScene.map->getTileSize();
-  int sequence = 0;
-  
-  for (size_t i = 1; i < rooms.size(); ++i) {
-    const auto& room = rooms[i];
-    int count = std::clamp(room.size.x * room.size.y / 90, 1, 3);
-    for (int j = 0; j < count; ++j) {
-      sf::Vector2f position((room.position.x + 1.5f + j * (room.size.x - 3.0f) / count) * tile,
-                           (room.position.y + room.size.y / 2 + 0.5f) * tile);
-      if ((position - player->getPosition()).length() < 450.0f) continue;
+  const sf::Vector2f inset{2.0f, 2.0f};
+  roomEnemies.resize(rooms.size());
+
+  for (std::size_t roomIndex = 1; roomIndex < rooms.size(); ++roomIndex) {
+    const auto& room = rooms[roomIndex];
+    auto& enemies = roomEnemies[roomIndex];
+    const sf::Vector2f low = sf::Vector2f(room.position) + inset;
+    const sf::Vector2f high = sf::Vector2f(room.position + room.size) - inset;
+    const std::array<sf::Vector2f, 5> positions{{
+      low, high, {high.x, low.y}, {low.x, high.y}, {(low.x + high.x) / 2.0f, low.y}
+    }};
+
+    const int count = std::clamp(room.size.x * room.size.y / 60, 3, 5);
+    for (int i = 0; i < count; ++i) {
       std::shared_ptr<Enemy> enemy;
-      switch (sequence++ % 4) {
+      switch ((roomIndex + runStats.floor - 1 + i) % 4) {
         case 0: enemy = std::make_shared<RadishRunner>(gameScene, player); break;
         case 1: enemy = std::make_shared<PeaShooter>(gameScene, player); break;
         case 2: enemy = std::make_shared<OnionGuard>(gameScene, player); break;
         case 3: enemy = std::make_shared<Yabloko>(gameScene, player); break;
       }
-      enemy->setPosition(position);
+      enemy->setPosition(positions[i] * tile);
+      enemy->active = false;
       gameScene.spawn(LAYER_CHARACTERS, enemy);
+      enemies.push_back(enemy);
+    }
+  }
+}
+
+void GameManager::beginEncounter(std::size_t roomIndex) {
+  activeRoom = roomIndex;
+  gameScene.map->lockRoom(roomIndex);
+  auto& enemies = roomEnemies[roomIndex];
+  for (const auto& enemy : enemies) {
+    enemy->active = true;
+  }
+  runStats.enemiesRemaining = enemies.size();
+}
+
+void GameManager::updateEncounter() {
+  if (!activeRoom) {
+    auto room = gameScene.map->getRoomContaining(player->getHitbox());
+    if (room && !roomEnemies[*room].empty()) beginEncounter(*room);
+    return;
+  }
+
+  auto& enemies = roomEnemies[*activeRoom];
+  std::erase_if(enemies, [](const auto& enemy) { return enemy->destroyed; });
+  runStats.enemiesRemaining = enemies.size();
+  if (!enemies.empty()) return;
+
+  const auto clearedRoom = *activeRoom;
+  activeRoom.reset();
+  gameScene.map->unlockRoom();
+
+  if (clearedRoom == roomEnemies.size() - 1) {
+    if (runStats.floor == RunStats::FLOOR_COUNT) finishRun();
+    else {
+      gameScene.map->unlockExit();
+      runStats.isExitOpen = true;
     }
   }
 }
@@ -141,13 +200,16 @@ void GameManager::resume() {
 void GameManager::endRun() {
   gameScene.clearObjects();
   player.reset();
+  activeRoom.reset();
+  roomEnemies.clear();
   menuTime = 0.0f;
 
   ui->open(Interface::Screen::Main);
   window.setCursorGrabbed(false);
 }
 
-void GameManager::update(float deltaTime) {
+void GameManager::update(std::chrono::steady_clock::duration elapsed) {
+  const float deltaTime = std::chrono::duration<float, std::milli>(elapsed).count();
   if (!inRun()) {
     menuTime += deltaTime;
     float angle = menuTime / MENU_CAMERA_PERIOD * 2.0f * 3.14159265f;
@@ -159,7 +221,7 @@ void GameManager::update(float deltaTime) {
 
   if (ui->getScreen() != Interface::Screen::None) return;
 
-  runStats.time += deltaTime;
+  runStats.time += elapsed;
 
   sf::Vector2f mouse = InputSystem::getMousePos(gameScene);
   player->aimAt(mouse);
@@ -169,22 +231,32 @@ void GameManager::update(float deltaTime) {
     return;
   }
 
+  updateEncounter();
+  if (!inRun()) return;
+
+  if (gameScene.map->canUseExit(player->getPosition())) {
+    ++runStats.floor;
+    loadFloor();
+    return;
+  }
+
   gameScene.cameraPos = (
     mouse+player->getPosition().componentWiseMul({2,2}))
     .componentWiseDiv({3,3});
 }
 
 void GameManager::run() {
-  auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::steady_clock::now();
   while (window.isOpen()) {
     window.pollEvents();
+    if (!window.isOpen()) break;
 
-    auto dt = (std::chrono::high_resolution_clock::now()-start);
-    deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(dt).count()/1000.0f;
-    renderDelta += deltaTime;
-    start = std::chrono::high_resolution_clock::now();
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = now - start;
+    start = now;
+    renderDelta += std::chrono::duration<float, std::milli>(elapsed).count();
 
-    update(deltaTime);
+    update(elapsed);
 
     if (1000.0f/renderDelta <= FRAMERATE) {
       window.draw(activeScene());
