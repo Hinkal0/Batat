@@ -1,6 +1,6 @@
 #include "Text.h"
 #include <cmath>
-#include <string>
+#include <sstream>
 #include "core/Resources.h"
 
 static const unsigned PIXEL_SIZE = 8;
@@ -17,6 +17,16 @@ static float capitalTop(unsigned scale) {
 }
 
 namespace Text {
+  std::string formatTime(std::chrono::seconds time) {
+    long long total = time.count();
+    long long hours = total / 3600;
+    long long minutes = total / 60 % 60;
+    long long seconds = total % 60;
+    std::ostringstream oss;
+    oss << hours << ':' << std::setfill('0') << std::setw(2) << minutes << ':' << std::setfill('0') << std::setw(2) << seconds;
+    return oss.str();
+  }
+
   float width(std::string_view text, unsigned scale) {
     if (!Fonts::pixel || text.empty()) return 0.0f;
     return makeText(text, scale).findCharacterPos(text.size()).x - (float)scale;

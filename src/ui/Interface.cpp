@@ -1,6 +1,7 @@
 #include "Interface.h"
 #include <SFML/Audio/Listener.hpp>
 #include <algorithm>
+#include <chrono>
 #include "Text.h"
 #include "core/InputSystem.h"
 
@@ -129,6 +130,12 @@ void Interface::drawMainMenu(sf::RenderTarget& target, sf::RenderStates states) 
   Text::draw(target, "BATAT", {CENTER_X + 2.0f, 34.0f}, 6, TITLE_SHADOW_COLOR,
     Text::Align::Center, false, states);
   Text::draw(target, "BATAT", {CENTER_X, 30.0f}, 6, TITLE_COLOR, Text::Align::Center, false, states);
+
+  std::string bestTime = config.bestTime
+    ? Text::formatTime(std::chrono::duration_cast<std::chrono::seconds>(*config.bestTime))
+    : "--";
+  Text::draw(target, "BEST TIME " + bestTime, {CENTER_X, 87.0f}, 1, BEST_COLOR,
+    Text::Align::Center, true, states);
 
   const float top = 200.0f, step = 11.0f;
   const float columns[] = {CENTER_X - 132.0f, CENTER_X - 4.0f};
