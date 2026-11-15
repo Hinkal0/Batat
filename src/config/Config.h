@@ -1,14 +1,17 @@
 #pragma once
+#include <chrono>
+#include <cstdint>
+#include <optional>
 #include <string>
 
 struct WinConfig {
-  std::string title = "Title";
-  uint32_t w = 800, h = 600;
-  uint32_t minW = 480, minH = 270;
-  bool fullscreen = false;
+  uint32_t w = 960, h = 540;
+  bool fullscreen = true;
+  std::string title = "Batat";
 };
 
 struct GameConfig {
   WinConfig window;
   int volume = 100;
+  std::optional<std::chrono::milliseconds> bestTime;
 };

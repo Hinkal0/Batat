@@ -4,6 +4,8 @@
 #include <sstream>
 #include <stdexcept>
 
+const char* DEFAULT_CONFIG = "config/config.default.ini";
+
 static std::string trim(const std::string& s) {
   size_t begin = s.find_first_not_of(" \t\r");
   if (begin == std::string::npos) return "";
@@ -23,9 +25,14 @@ static bool parseValue(const std::string& text, T& out) {
 }
 
 void Parser::read(const char* filename) {
+  values.clear();
   std::ifstream file(filename);
   if (!file.is_open()) {
-    throw std::runtime_error("Could not open config file!");
+    if (filename == DEFAULT_CONFIG) {
+      throw std::runtime_error("Could not open default config file!");
+    }
+    read(DEFAULT_CONFIG);
+    return;
   }
 
   std::string line, section;
@@ -76,6 +83,16 @@ bool Parser::extractConfig(GameConfig& config) {
     config.volume = std::clamp(config.volume, 0, 100);
   }
 
+  config.bestTime.reset();
+  if (const std::string* bestTime = find("Run", "best_time_ms")) {
+    std::chrono::milliseconds::rep milliseconds;
+    if (parseValue(*bestTime, milliseconds) && milliseconds >= 0) {
+      config.bestTime = std::chrono::milliseconds(milliseconds);
+    } else {
+      f = false;
+    }
+  }
+
   return f;
 }
 
@@ -89,6 +106,10 @@ bool Parser::save(const char* filename, const GameConfig& config) {
        << "  title=" << config.window.title << "\n"
        << "[Audio]\n"
        << "  volume=" << config.volume << "\n";
+  if (config.bestTime) {
+    file << "[Run]\n"
+         << "  best_time_ms=" << config.bestTime->count() << "\n";
+  }
 
   return true;
 }
