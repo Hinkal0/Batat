@@ -37,6 +37,7 @@ protected:
   sf::Transform animationTransform() const;
   void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 public:
+  bool active = true;
   sf::FloatRect getHitbox() const override;
   void takeDamage(int amount) override;
   void update(float deltaTime) override;

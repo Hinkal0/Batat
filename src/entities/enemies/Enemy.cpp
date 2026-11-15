@@ -23,7 +23,7 @@ sf::FloatRect Enemy::getHitbox() const {
 }
 
 void Enemy::takeDamage(int amount) {
-  if (destroyed || amount <= 0) return;
+  if (destroyed || !active || amount <= 0) return;
   Character::takeDamage(amount);
   alerted = true;
   hurtTime = 120.0f;
@@ -48,6 +48,7 @@ void Enemy::fire(sf::Vector2f direction) {
 void Enemy::update(float dt) {
   if (destroyed) return;
   age += dt;
+  if (!active) return;
   hurtTime = std::max(0.0f, hurtTime - dt);
   auto player = target.lock();
   if (!player || player->getHealth() == 0) {
