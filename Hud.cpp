@@ -1,49 +1,44 @@
 #include "Hud.h"
+#include "GameManager.h"
 #include "Text.h"
 #include "Window.h"
-#include <algorithm>
-#include <cmath>
 #include <cstdio>
 #include <string>
 
-static const float MARGIN = 8.0f;
-static const float ROW_STEP = 12.0f;
-static const float BAR_X = 44.0f;
-static const float BAR_WIDTH = 64.0f;
-static const float BAR_HEIGHT = 5.0f;
+static constexpr float MARGIN = 8.0f;
+static constexpr float ROW_STEP = 12.0f;
+static constexpr float HEALTH_Y = MARGIN;
+static constexpr float XP_Y = MARGIN + ROW_STEP;
+static constexpr float SLASH_Y = MARGIN + 2.0f * ROW_STEP;
+static constexpr float BAR_X = 44.0f;
+static constexpr sf::Vector2f BAR_SIZE(64.0f, 5.0f);
+static constexpr float RIGHT_EDGE = Window::UI_SIZE.x - MARGIN;
 
 static const sf::Color PANEL_COLOR(10, 8, 16, 150);
-static const sf::Color OUTLINE_COLOR(8, 6, 12);
 static const sf::Color LABEL_COLOR(170, 170, 190);
 static const sf::Color VALUE_COLOR(255, 255, 255);
 
 static const sf::Color HEALTH_COLOR(224, 62, 62);
 static const sf::Color XP_COLOR(84, 200, 232);
-static const sf::Color BAR_EMPTY_COLOR(34, 34, 48);
 static const sf::Color SLASH_READY_COLOR(245, 240, 220);
 static const sf::Color SLASH_CHARGING_COLOR(120, 118, 140);
 
-static void rect(sf::RenderTarget& target, sf::Vector2f position, sf::Vector2f size,
-    sf::Color color, bool outline = false) {
-  sf::RectangleShape shape(size);
-  shape.setPosition(position);
-  shape.setFillColor(color);
-  if (outline) {
-    shape.setOutlineThickness(1.0f);
-    shape.setOutlineColor(OUTLINE_COLOR);
-  }
-  target.draw(shape);
+Hud::Hud(const Player& player, const RunStats& stats)
+  : player(player), stats(stats),
+    healthBar({BAR_X, HEALTH_Y + 1.0f}, BAR_SIZE, 0.0f, HEALTH_COLOR),
+    xpBar({BAR_X, XP_Y + 1.0f}, BAR_SIZE, 0.0f, XP_COLOR),
+    slashBar({BAR_X, SLASH_Y + 1.0f}, BAR_SIZE, 0.0f, SLASH_CHARGING_COLOR),
+    floorLabel({RIGHT_EDGE, HEALTH_Y}, "FLOOR", "", LABEL_COLOR, VALUE_COLOR),
+    timeLabel({RIGHT_EDGE, XP_Y}, "TIME", "", LABEL_COLOR, VALUE_COLOR) {
+  update(0.0f);
 }
 
-static void bar(sf::RenderTarget& target, sf::Vector2f position, float fill,
-    sf::Color color) {
-  fill = std::clamp(fill, 0.0f, 1.0f);
-  rect(target, position, {BAR_WIDTH, BAR_HEIGHT}, BAR_EMPTY_COLOR, true);
-  float width = std::round(BAR_WIDTH * fill);
-  if (width > 0.0f) {
-    rect(target, position, {width, BAR_HEIGHT}, color);
-    rect(target, position, {width, 1.0f}, color + sf::Color(40, 40, 40));
-  }
+static void drawPanel(sf::RenderTarget& target, sf::Vector2f position, sf::Vector2f size,
+    sf::RenderStates states) {
+  sf::RectangleShape panel(size);
+  panel.setPosition(position);
+  panel.setFillColor(PANEL_COLOR);
+  target.draw(panel, states);
 }
 
 static std::string formatTime(float ms) {
@@ -54,42 +49,41 @@ static std::string formatTime(float ms) {
   return buffer;
 }
 
-static void labeledValue(sf::RenderTarget& target, float y,
-    const std::string& label, const std::string& value) {
-  float right = Window::UI_SIZE.x - MARGIN;
-  Text::draw(target, value, {right, y}, 1, VALUE_COLOR, Text::Align::Right);
-  Text::draw(target, label, {right - Text::width(value) - 5.0f, y}, 1,
-    LABEL_COLOR, Text::Align::Right);
+void Hud::update(float) {
+  healthBar.fill = static_cast<float>(player.getHealth()) / player.getMaxHealth();
+  xpBar.fill = stats.xpToNextLevel != 0 ? static_cast<float>(stats.xp) / stats.xpToNextLevel : 0.0f;
+  slashBar.fill = player.getSlashReadiness();
+  slashBar.color = slashBar.fill >= 1.0f ? SLASH_READY_COLOR : SLASH_CHARGING_COLOR;
+  floorLabel.value = std::to_string(stats.floor);
+  timeLabel.value = formatTime(stats.time);
 }
 
-void Hud::draw(sf::RenderTarget& target, sf::RenderStates) const {
-  float y0 = MARGIN, y1 = MARGIN + ROW_STEP, y2 = MARGIN + 2 * ROW_STEP;
+void Hud::drawContents(sf::RenderTarget& target, sf::RenderStates states) const {
   float panelHeight = ROW_STEP + Text::GLYPH_HEIGHT + 8.0f;
+  float barValueX = BAR_X + BAR_SIZE.x + 5.0f;
 
-  rect(target, {MARGIN - 4.0f, MARGIN - 4.0f},
-    {BAR_X + BAR_WIDTH + 36.0f - MARGIN, panelHeight}, PANEL_COLOR);
+  drawPanel(target, {MARGIN - 4.0f, MARGIN - 4.0f},
+    {BAR_X + BAR_SIZE.x + 36.0f - MARGIN, panelHeight}, states);
 
-  Text::draw(target, "HP", {MARGIN, y0}, 1, LABEL_COLOR);
-  float healthFill = (float)player.getHealth() / player.getMaxHealth();
-  bar(target, {BAR_X, y0 + 1.0f}, healthFill, HEALTH_COLOR);
+  Text::draw(target, "HP", {MARGIN, HEALTH_Y}, 1, LABEL_COLOR, Text::Align::Left, true, states);
+  target.draw(healthBar, states);
   Text::draw(target, std::to_string(player.getHealth()) + "/" + std::to_string(player.getMaxHealth()),
-    {BAR_X + BAR_WIDTH + 5.0f, y0}, 1, VALUE_COLOR);
+    {barValueX, HEALTH_Y}, 1, VALUE_COLOR, Text::Align::Left, true, states);
 
-  Text::draw(target, "LV" + std::to_string(stats.level), {MARGIN, y1}, 1, LABEL_COLOR);
-  float xpFill = stats.xpToNextLevel != 0 ? (float)stats.xp / stats.xpToNextLevel : 0.0f;
-  bar(target, {BAR_X, y1 + 1.0f}, xpFill, XP_COLOR);
+  Text::draw(target, "LV" + std::to_string(stats.level), {MARGIN, XP_Y}, 1,
+    LABEL_COLOR, Text::Align::Left, true, states);
+  target.draw(xpBar, states);
   Text::draw(target, std::to_string(stats.xp) + "/" + std::to_string(stats.xpToNextLevel),
-    {BAR_X + BAR_WIDTH + 5.0f, y1}, 1, VALUE_COLOR);
+    {barValueX, XP_Y}, 1, VALUE_COLOR, Text::Align::Left, true, states);
 
-  float slash = player.getSlashReadiness();
-  bool ready = slash >= 1.0f;
-  Text::draw(target, "SLASH", {MARGIN, y2}, 1, ready ? VALUE_COLOR : LABEL_COLOR);
-  bar(target, {BAR_X, y2 + 1.0f}, slash, ready ? SLASH_READY_COLOR : SLASH_CHARGING_COLOR);
+  Text::draw(target, "SLASH", {MARGIN, SLASH_Y}, 1, slashBar.fill >= 1.0f ? VALUE_COLOR : LABEL_COLOR,
+    Text::Align::Left, true, states);
+  target.draw(slashBar, states);
 
   float panelWidth = 72.0f;
-  rect(target, {Window::UI_SIZE.x - MARGIN - panelWidth + 4.0f, MARGIN - 4.0f},
-    {panelWidth, panelHeight}, PANEL_COLOR);
+  drawPanel(target, {RIGHT_EDGE - panelWidth + 4.0f, MARGIN - 4.0f},
+    {panelWidth, panelHeight}, states);
 
-  labeledValue(target, y0, "FLOOR", std::to_string(stats.floor));
-  labeledValue(target, y1, "TIME", formatTime(stats.time));
+  target.draw(floorLabel, states);
+  target.draw(timeLabel, states);
 }

@@ -5,6 +5,7 @@
 #include "InputSystem.h"
 
 static const int VOLUME_STEP = 10;
+static constexpr float CENTER_X = Window::UI_SIZE.x / 2.0f;
 
 static const sf::Color TITLE_COLOR(255, 214, 120);
 static const sf::Color TITLE_SHADOW_COLOR(120, 60, 30);
@@ -23,18 +24,25 @@ static const char* CONTROLS[][2] = {
 
 Interface::Interface(Window& window, GameConfig& config)
   : window(window), config(config),
-    mainMenu(window), pauseMenu(window, "PAUSED"), settingsMenu(window, "SETTINGS") {
+    mainMenu({CENTER_X, 112.0f}), pauseMenu({CENTER_X, 118.0f}, "PAUSED"),
+    settingsMenu({CENTER_X, 106.0f}, "SETTINGS") {
 
-  InputSystem::onKeyPressed.addListener([this](auto key) { if (Menu* menu = activeMenu()) menu->onKeyPressed(key); });
-  InputSystem::onMouseMoved.addListener([this](auto pos) { if (Menu* menu = activeMenu()) menu->onMouseMoved(pos); });
-  InputSystem::onMousePressed.addListener([this](auto button) { if (Menu* menu = activeMenu()) menu->onMousePressed(button); });
-  
-  mainMenu.top = 112.0f;
+  InputSystem::onKeyPressed.addListener([this](auto key) {
+    if (Menu* menu = activeMenu(); menu && visible) menu->onKeyPressed(key);
+  });
+  InputSystem::onMouseMoved.addListener([this](auto pos) {
+    if (Menu* menu = activeMenu(); menu && visible) menu->onMouseMoved(pos - position);
+  });
+  InputSystem::onMousePressed.addListener([this](auto button) {
+    if (Menu* menu = activeMenu(); menu && visible && button == sf::Mouse::Button::Left) {
+      menu->onMousePressed(button, InputSystem::getUIMousePos() - position);
+    }
+  });
+
   mainMenu.addButton("PLAY", [this] { startGame(); });
   mainMenu.addButton("SETTINGS", [this] { open(Screen::Settings); });
   mainMenu.addButton("EXIT", [this] { exit(); });
 
-  pauseMenu.top = 118.0f;
   pauseMenu.addButton("RESUME", [this] { resume(); });
   pauseMenu.addButton("SETTINGS", [this] { open(Screen::Settings); });
   pauseMenu.addButton("MAIN MENU", [this] { quitToMenu(); });
@@ -44,7 +52,6 @@ Interface::Interface(Window& window, GameConfig& config)
     open(settingsReturn);
   };
 
-  settingsMenu.top = 106.0f;
   settingsMenu.addOption("VOLUME",
     [this] { return this->config.volume == 0 ? std::string("OFF") : std::to_string(this->config.volume) + "%"; },
     [this](int direction) { changeVolume(direction); },
@@ -112,21 +119,19 @@ Menu* Interface::activeMenu() {
   return const_cast<Menu*>(static_cast<const Interface*>(this)->activeMenu());
 }
 
-void Interface::drawOverlay(sf::RenderTarget& target, uint8_t alpha) const {
+void Interface::drawOverlay(sf::RenderTarget& target, uint8_t alpha, sf::RenderStates states) const {
   sf::RectangleShape overlay(Window::UI_SIZE);
   overlay.setFillColor(sf::Color(8, 6, 14, alpha));
-  target.draw(overlay);
+  target.draw(overlay, states);
 }
 
-void Interface::drawMainMenu(sf::RenderTarget& target) const {
-  float centerX = Window::UI_SIZE.x / 2.0f;
-
-  Text::draw(target, "BATAT", {centerX + 2.0f, 34.0f}, 6, TITLE_SHADOW_COLOR,
-    Text::Align::Center, false);
-  Text::draw(target, "BATAT", {centerX, 30.0f}, 6, TITLE_COLOR, Text::Align::Center, false);
+void Interface::drawMainMenu(sf::RenderTarget& target, sf::RenderStates states) const {
+  Text::draw(target, "BATAT", {CENTER_X + 2.0f, 34.0f}, 6, TITLE_SHADOW_COLOR,
+    Text::Align::Center, false, states);
+  Text::draw(target, "BATAT", {CENTER_X, 30.0f}, 6, TITLE_COLOR, Text::Align::Center, false, states);
 
   const float top = 200.0f, step = 11.0f;
-  const float columns[] = {centerX - 132.0f, centerX - 4.0f};
+  const float columns[] = {CENTER_X - 132.0f, CENTER_X - 4.0f};
   int count = sizeof(CONTROLS) / sizeof(CONTROLS[0]);
   float keyWidth = 0.0f;
   for (int i = 0; i < count; i++) keyWidth = std::max(keyWidth, Text::width(CONTROLS[i][0]));
@@ -134,33 +139,33 @@ void Interface::drawMainMenu(sf::RenderTarget& target) const {
   int rows = (count + 1) / 2;
 
   sf::RectangleShape panel({280.0f, rows * step + 16.0f});
-  panel.setPosition({centerX - 140.0f, top - 8.0f});
+  panel.setPosition({CENTER_X - 140.0f, top - 8.0f});
   panel.setFillColor(sf::Color(16, 14, 24, 170));
   panel.setOutlineThickness(1.0f);
   panel.setOutlineColor(sf::Color(60, 56, 78));
-  target.draw(panel);
+  target.draw(panel, states);
 
   for (int i = 0; i < count; i++) {
     float x = columns[i / rows];
     float y = top + (i % rows) * step;
-    Text::draw(target, CONTROLS[i][0], {x, y}, 1, HINT_KEY_COLOR);
-    Text::draw(target, CONTROLS[i][1], {x + keyWidth, y}, 1, HINT_COLOR);
+    Text::draw(target, CONTROLS[i][0], {x, y}, 1, HINT_KEY_COLOR, Text::Align::Left, true, states);
+    Text::draw(target, CONTROLS[i][1], {x + keyWidth, y}, 1, HINT_COLOR, Text::Align::Left, true, states);
   }
 }
 
-void Interface::draw(sf::RenderTarget& target, sf::RenderStates states) const {
+void Interface::drawContents(sf::RenderTarget& target, sf::RenderStates states) const {
   switch (screen) {
   case Screen::None:
     return;
   case Screen::Main:
-    drawOverlay(target, 140);
-    drawMainMenu(target);
+    drawOverlay(target, 140, states);
+    drawMainMenu(target, states);
     break;
   case Screen::Pause:
-    drawOverlay(target, 170);
+    drawOverlay(target, 170, states);
     break;
   case Screen::Settings:
-    drawOverlay(target, settingsReturn == Screen::Main ? 190 : 170);
+    drawOverlay(target, settingsReturn == Screen::Main ? 190 : 170, states);
     break;
   }
 

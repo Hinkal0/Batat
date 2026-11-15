@@ -41,9 +41,9 @@ private:
   const Menu* activeMenu() const;
   Menu* activeMenu();
 
-  void drawOverlay(sf::RenderTarget& target, uint8_t alpha) const;
-  void drawMainMenu(sf::RenderTarget& target) const;
-  void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+  void drawOverlay(sf::RenderTarget& target, uint8_t alpha, sf::RenderStates states) const;
+  void drawMainMenu(sf::RenderTarget& target, sf::RenderStates states) const;
+  void drawContents(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 public:
   Interface(Window& window, GameConfig& config);

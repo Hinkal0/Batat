@@ -35,13 +35,13 @@ void Scene::update(float deltaTime) {
     }
   }
 
+  resolveHits();
+
   for (auto& layer : uiLayers) {
     for (auto& element : layer) {
       element->update(deltaTime);
     }
   }
-
-  resolveHits();
 
   for (auto& layer : layers) {
     std::erase_if(layer, [](const auto& object) { return object->destroyed; });

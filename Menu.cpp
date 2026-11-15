@@ -1,7 +1,6 @@
 #include "Menu.h"
-#include <cmath>
+#include <utility>
 #include "Text.h"
-#include "InputSystem.h"
 
 static const float BUTTON_WIDTH = 120.0f;
 static const float OPTION_WIDTH = 230.0f;
@@ -18,7 +17,8 @@ static const sf::Color TEXT_COLOR(200, 200, 212);
 static const sf::Color TEXT_SELECTED_COLOR(255, 222, 120);
 static const sf::Color TEXT_DISABLED_COLOR(96, 94, 110);
 
-Menu::Menu(const Window& window, std::string title) : window(window), title(std::move(title)) {}
+Menu::Menu(sf::Vector2f position, std::string title)
+  : UIElement(position), title(std::move(title)) {}
 
 void Menu::addButton(std::string label, std::function<void()> press) {
   items.push_back({std::move(label), std::move(press), nullptr, nullptr, nullptr, nullptr});
@@ -41,9 +41,7 @@ void Menu::reset() {
 
 sf::FloatRect Menu::itemRect(int index) const {
   float width = items[index].value ? OPTION_WIDTH : BUTTON_WIDTH;
-  return sf::FloatRect(
-    {std::round((Window::UI_SIZE.x - width) / 2.0f), top + index * ROW_STEP},
-    {width, ROW_HEIGHT});
+  return {{-width / 2.0f, index * ROW_STEP}, {width, ROW_HEIGHT}};
 }
 
 int Menu::itemAt(sf::Vector2f point) const {
@@ -65,7 +63,7 @@ void Menu::select(int index, int direction) {
 }
 
 void Menu::onKeyPressed(sf::Keyboard::Key key) {
-  if (items.empty()) return;
+  if (!visible || items.empty()) return;
 
   if (!items[selected].isEnabled()) select(selected, 1);
 
@@ -100,18 +98,17 @@ void Menu::onKeyPressed(sf::Keyboard::Key key) {
   }
 }
 
-void Menu::onMouseMoved(sf::Vector2f uiMouse) {
-  if (items.empty()) return;
-  int index = itemAt(uiMouse);
+void Menu::onMouseMoved(sf::Vector2f mousePos) {
+  if (!visible) return;
+  int index = itemAt(mousePos - position);
   if (index >= 0 && items[index].isEnabled()) selected = index;
 }
 
-void Menu::onMousePressed(sf::Mouse::Button button) {
-  if (items.empty()) return;
-  if (button != sf::Mouse::Button::Left) return;
-  
-  sf::Vector2f uiMouse = InputSystem::getUIMousePos();
-  int index = itemAt(uiMouse);
+void Menu::onMousePressed(sf::Mouse::Button button, sf::Vector2f mousePos) {
+  if (!visible || button != sf::Mouse::Button::Left) return;
+
+  sf::Vector2f localMouse = mousePos - position;
+  int index = itemAt(localMouse);
   if (index < 0 || !items[index].isEnabled()) return;
   selected = index;
 
@@ -121,17 +118,15 @@ void Menu::onMousePressed(sf::Mouse::Button button) {
   } else if (item.change) {
     sf::FloatRect rect = itemRect(index);
     float valueStart = rect.position.x + rect.size.x - VALUE_WIDTH;
-    bool left = uiMouse.x >= valueStart && uiMouse.x < valueStart + VALUE_WIDTH / 2.0f;
+    bool left = localMouse.x >= valueStart && localMouse.x < valueStart + VALUE_WIDTH / 2.0f;
     item.step(left ? -1 : 1);
   }
 }
 
-void Menu::draw(sf::RenderTarget& target, sf::RenderStates states) const {
-  float centerX = Window::UI_SIZE.x / 2.0f;
-
+void Menu::drawContents(sf::RenderTarget& target, sf::RenderStates states) const {
   if (!title.empty()) {
-    Text::draw(target, title, {centerX, top - TITLE_OFFSET}, 2,
-      sf::Color::White, Text::Align::Center);
+    Text::draw(target, title, {0.0f, -TITLE_OFFSET}, 2,
+      sf::Color::White, Text::Align::Center, true, states);
   }
 
   for (int i = 0; i < (int)items.size(); i++) {
@@ -151,18 +146,19 @@ void Menu::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     float textY = rect.position.y + 3.0f;
 
     if (!item.value) {
-      Text::draw(target, item.label, {centerX, textY}, 1, color, Text::Align::Center);
+      Text::draw(target, item.label, {0.0f, textY}, 1, color, Text::Align::Center, true, states);
       continue;
     }
 
     float right = rect.position.x + rect.size.x;
     float valueStart = right - VALUE_WIDTH;
-    Text::draw(target, item.label, {rect.position.x + 6.0f, textY}, 1, color);
+    Text::draw(target, item.label, {rect.position.x + 6.0f, textY}, 1,
+      color, Text::Align::Left, true, states);
     Text::draw(target, "<", {valueStart + 4.0f, textY}, 1,
-      enabled && !item.canStep(-1) ? TEXT_DISABLED_COLOR : color);
+      enabled && !item.canStep(-1) ? TEXT_DISABLED_COLOR : color, Text::Align::Left, true, states);
     Text::draw(target, item.value(), {valueStart + VALUE_WIDTH / 2.0f, textY}, 1,
-      color, Text::Align::Center);
+      color, Text::Align::Center, true, states);
     Text::draw(target, ">", {right - 8.0f, textY}, 1,
-      enabled && !item.canStep(1) ? TEXT_DISABLED_COLOR : color);
+      enabled && !item.canStep(1) ? TEXT_DISABLED_COLOR : color, Text::Align::Left, true, states);
   }
 }

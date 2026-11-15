@@ -23,13 +23,13 @@ namespace Text {
   }
 
   void draw(sf::RenderTarget& target, std::string_view text, sf::Vector2f position,
-      unsigned scale, sf::Color color, Align align, bool shadow) {
+      unsigned scale, sf::Color color, Align align, bool shadow, sf::RenderStates states) {
     if (!Fonts::pixel || text.empty()) return;
 
     float w = width(text, scale);
     if (align == Align::Center) position.x -= w / 2.0f;
     else if (align == Align::Right) position.x -= w;
-    position = {std::round(position.x), std::round(position.y) - capitalTop(scale)};
+    position = {std::floor(position.x + 0.5f), std::floor(position.y + 0.5f) - capitalTop(scale)};
 
     sf::Text label = makeText(text, scale);
 
@@ -38,11 +38,11 @@ namespace Text {
       shadowColor.a = (uint8_t)(shadowColor.a * color.a / 255);
       label.setFillColor(shadowColor);
       label.setPosition(position + sf::Vector2f(1.0f, 1.0f) * (float)scale);
-      target.draw(label);
+      target.draw(label, states);
     }
 
     label.setFillColor(color);
     label.setPosition(position);
-    target.draw(label);
+    target.draw(label, states);
   }
 };

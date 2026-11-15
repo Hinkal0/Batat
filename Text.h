@@ -15,5 +15,5 @@ namespace Text {
 
   void draw(sf::RenderTarget& target, std::string_view text, sf::Vector2f position,
     unsigned scale = 1, sf::Color color = sf::Color::White,
-    Align align = Align::Left, bool shadow = true);
+    Align align = Align::Left, bool shadow = true, sf::RenderStates states = sf::RenderStates::Default);
 };

@@ -36,6 +36,8 @@ add_custom_target(fonts
 )
 
 add_executable(batat
+  Bar.cpp
+  Bar.h
   Character.h
   Config.h
   Enemy.cpp
@@ -50,6 +52,8 @@ add_executable(batat
   InputSystem.h
   Interface.cpp
   Interface.h
+  LabeledValue.cpp
+  LabeledValue.h
   Map.cpp
   Map.h
   Menu.cpp

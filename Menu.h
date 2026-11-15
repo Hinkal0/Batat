@@ -1,11 +1,10 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include <functional>
 #include <string>
 #include <vector>
-#include "Window.h"
+#include "UIElement.h"
 
-class Menu : public sf::Drawable {
+class Menu : public UIElement {
   struct Item {
     std::string label;
     std::function<void()> press;
@@ -19,8 +18,6 @@ class Menu : public sf::Drawable {
     void step(int direction) const { if (change && canStep(direction)) change(direction); }
   };
 
-  const Window& window;
-
   std::vector<Item> items;
   int selected = 0;
 
@@ -30,13 +27,12 @@ class Menu : public sf::Drawable {
   int itemAt(sf::Vector2f point) const;
   void select(int index, int direction);
 
-  void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+  void drawContents(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 public:
   std::string title;
-  float top = 110.0f;
 
-  Menu(const Window& window, std::string title = "");
+  explicit Menu(sf::Vector2f position, std::string title = "");
 
   void addButton(std::string label, std::function<void()> press);
   void addOption(std::string label, std::function<std::string()> value,
@@ -47,6 +43,6 @@ public:
   void reset();
 
   void onKeyPressed(sf::Keyboard::Key key);
-  void onMouseMoved(sf::Vector2f uiMouse);
-  void onMousePressed(sf::Mouse::Button button);
+  void onMouseMoved(sf::Vector2f mousePosition);
+  void onMousePressed(sf::Mouse::Button button, sf::Vector2f mousePosition);
 };
