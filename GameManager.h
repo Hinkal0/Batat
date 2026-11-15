@@ -5,7 +5,6 @@
 #include "Interface.h"
 
 struct RunStats {
-  int score = 0;
   int floor = 1;
   int level = 1;
   int xp = 0;

@@ -163,15 +163,7 @@ void GameManager::update(float deltaTime) {
 
   sf::Vector2f mouse = InputSystem::getMousePos(gameScene);
   player->aimAt(mouse);
-  auto enemyCount = [this] {
-    int count = 0;
-    for (const auto& object : gameScene.getLayer(LAYER_CHARACTERS))
-      if (dynamic_cast<Enemy*>(object.get())) ++count;
-    return count;
-  };
-  int before = enemyCount();
   gameScene.update(deltaTime);
-  runStats.score += (before - enemyCount()) * 10;
   if (player->getHealth() == 0) {
     endRun();
     return;

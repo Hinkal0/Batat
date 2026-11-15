@@ -64,7 +64,7 @@ static void labeledValue(sf::RenderTarget& target, float y,
 
 void Hud::draw(sf::RenderTarget& target, sf::RenderStates) const {
   float y0 = MARGIN, y1 = MARGIN + ROW_STEP, y2 = MARGIN + 2 * ROW_STEP;
-  float panelHeight = 2 * ROW_STEP + Text::GLYPH_HEIGHT + 8.0f;
+  float panelHeight = ROW_STEP + Text::GLYPH_HEIGHT + 8.0f;
 
   rect(target, {MARGIN - 4.0f, MARGIN - 4.0f},
     {BAR_X + BAR_WIDTH + 36.0f - MARGIN, panelHeight}, PANEL_COLOR);
@@ -86,11 +86,10 @@ void Hud::draw(sf::RenderTarget& target, sf::RenderStates) const {
   Text::draw(target, "SLASH", {MARGIN, y2}, 1, ready ? VALUE_COLOR : LABEL_COLOR);
   bar(target, {BAR_X, y2 + 1.0f}, slash, ready ? SLASH_READY_COLOR : SLASH_CHARGING_COLOR);
 
-  float panelWidth = 116.0f;
+  float panelWidth = 72.0f;
   rect(target, {Window::UI_SIZE.x - MARGIN - panelWidth + 4.0f, MARGIN - 4.0f},
     {panelWidth, panelHeight}, PANEL_COLOR);
 
-  labeledValue(target, y0, "SCORE", std::to_string(stats.score));
-  labeledValue(target, y1, "FLOOR", std::to_string(stats.floor));
-  labeledValue(target, y2, "TIME", formatTime(stats.time));
+  labeledValue(target, y0, "FLOOR", std::to_string(stats.floor));
+  labeledValue(target, y1, "TIME", formatTime(stats.time));
 }
