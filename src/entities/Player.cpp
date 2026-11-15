@@ -34,6 +34,12 @@ void Player::aimAt(sf::Vector2f target) {
   if (offset.length() != 0.0f) aimDirection = offset.normalized();
 }
 
+void Player::enterFloor(sf::Vector2f spawnPoint) {
+  setPosition(spawnPoint);
+  activeSlash.reset();
+  lockInputUntilRelease();
+}
+
 void Player::lockInputUntilRelease() {
   fireLocked = true;
   slashHeld = true;

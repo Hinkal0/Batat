@@ -44,6 +44,7 @@ public:
   void aimAt(sf::Vector2f target);
   void takeDamage(int amount) override;
 
+  void enterFloor(sf::Vector2f spawnPoint);
   void lockInputUntilRelease();
 
   const PlayerStats& getStats() const { return stats; }
