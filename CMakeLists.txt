@@ -18,23 +18,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(SFML)
 
 add_custom_target(config
-  COMMAND ${CMAKE_COMMAND} -E copy
-    "${CMAKE_CURRENT_SOURCE_DIR}/config/config.ini"
-    "${RUNTIME_DIR}/config.ini"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/config"
+    "${RUNTIME_DIR}/config"
   VERBATIM
 )
 
-add_custom_target(textures
+add_custom_target(assets
   COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/textures"
-    "${RUNTIME_DIR}/textures"
-  VERBATIM
-)
-
-add_custom_target(fonts
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts"
-    "${RUNTIME_DIR}/fonts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    "${RUNTIME_DIR}/assets"
   VERBATIM
 )
 
@@ -114,4 +107,4 @@ target_link_libraries(batat
     SFML::Audio
 )
 
-add_dependencies(batat config textures fonts)
+add_dependencies(batat config assets)
