@@ -3,13 +3,13 @@
 namespace Textures {
   bool load() {
     try {
-      player.emplace("textures/player.png");
-      projectile.emplace("textures/projectile.png");
-      slash.emplace("textures/slash.png");
-      tilemap.emplace("textures/tilemap.png");
+      player.emplace("assets/textures/player.png");
+      projectile.emplace("assets/textures/projectile.png");
+      slash.emplace("assets/textures/slash.png");
+      tilemap.emplace("assets/textures/tilemap.png");
       const char* names[] = {"radish_runner", "pea_shooter", "onion_guard", "yabloko"};
       for (size_t i = 0; i < enemies.size(); ++i) {
-        enemies[i].emplace(std::string("textures/") + names[i] + ".png");
+        enemies[i].emplace(std::string("assets/textures/") + names[i] + ".png");
       }
     } catch (sf::Exception& e) {
       return false;
@@ -29,7 +29,7 @@ namespace Textures {
 namespace Fonts {
   bool load() {
     try {
-      pixel.emplace("fonts/PixelFont.ttf");
+      pixel.emplace("assets/fonts/PixelFont.ttf");
     } catch (sf::Exception& e) {
       return false;
     }
